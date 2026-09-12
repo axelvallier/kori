@@ -21,7 +21,7 @@ pour Postgres et l'authentification, serveur MCP exposé par l'application.
 npm run dev        # serveur de développement
 npm run build      # build de production
 npm run lint       # ESLint
-npm run typecheck  # tsc --noEmit
+npm run typecheck  # types des routes + tsc --noEmit
 ```
 
 ## Règles non négociables

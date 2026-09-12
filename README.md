@@ -27,7 +27,7 @@ npm install
 npm run dev        # http://localhost:3000
 npm run build      # build de production
 npm run lint       # ESLint
-npm run typecheck  # tsc --noEmit
+npm run typecheck  # types des routes + tsc --noEmit
 ```
 
 ## Hygiène des secrets
