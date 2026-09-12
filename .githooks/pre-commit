@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+#
+# Refuse un commit qui contient un secret. Double du hook PreToolUse de Claude
+# Code : celui-ci couvre les commits faits a la main, l'autre ceux de l'agent.
+
+exec "$(git rev-parse --show-toplevel)/scripts/check-secrets.sh"

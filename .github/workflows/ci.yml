@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Une seule exécution par branche : un nouveau push annule la précédente.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Par défaut, le jeton ne peut que lire. Les jobs qui ont besoin de plus le
+# demandent explicitement.
+permissions:
+  contents: read
+
+jobs:
+  qualite:
+    name: Lint, types, build, audit
+    runs-on: ubuntu-latest
+    steps:
+      # Les actions sont épinglées au SHA du commit, pas au tag : un tag est
+      # mobile, son propriétaire peut le déplacer sur un autre commit après
+      # coup. Le commentaire garde la version lisible.
+      - name: Récupérer le dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Installer Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Vérification des types
+        run: npm run typecheck
+
+      # Valeurs syntaxiquement valides et volontairement fausses. `src/lib/env.ts`
+      # valide les variables publiques au chargement du module : dès qu'une page
+      # l'importera, un build sans ces variables échouerait. Aucune n'est un
+      # secret, et aucune ne doit jamais l'être : ce fichier est public.
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://exemple-ci.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: valeur-bidon-pour-le-build-ci
+          SUPABASE_SERVICE_ROLE_KEY: valeur-bidon-pour-le-build-ci
+
+      # En dernier : une alerte publiée sur une dépendance transitive ne doit pas
+      # masquer une vraie erreur de lint ou de build.
+      - name: Audit des dépendances
+        run: npm audit --audit-level=high
+
+  secrets:
+    name: Scan de secrets sur l'historique
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # gitleaks commente la pull request quand il trouve
+    steps:
+      - name: Récupérer tout l'historique
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # sans ça, gitleaks ne voit que le dernier commit
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
