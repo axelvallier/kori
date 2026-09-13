@@ -78,13 +78,24 @@ create trigger provisionner_compte
 -- Le déclencheur ne vaut que pour l'avenir. Les comptes créés pendant le ticket
 -- 05, avant qu'il n'existe, n'ont ni profil ni liste : sans ce rattrapage, ils
 -- arriveraient sur l'écran vide que le ticket 06 est censé rendre impossible.
+-- `deleted_at` est filtre parce que Supabase supprime en douceur : la ligne
+-- reste dans `auth.users` avec cette colonne renseignee. Sans le filtre, un
+-- compte supprime a la demande de son proprietaire se reverrait attribuer un
+-- profil neuf et une liste « Ostoslista ». Les donnees lui appartiendraient
+-- bien, RLS n'est pas en cause — mais ressusciter les donnees d'un compte
+-- qu'on a dit avoir efface n'est pas defendable.
+--
+-- Le declencheur, lui, n'a pas besoin de ce filtre : il ne voit que des
+-- insertions, et un compte ne nait pas deja supprime.
 insert into public.profiles (id)
-select users.id from auth.users
+select users.id from auth.users users
+where users.deleted_at is null
 on conflict (id) do nothing;
 
 insert into public.lists (owner_id, name)
 select users.id, 'Ostoslista'
 from auth.users users
-where not exists (
-  select 1 from public.lists where lists.owner_id = users.id
-);
+where users.deleted_at is null
+  and not exists (
+    select 1 from public.lists where lists.owner_id = users.id
+  );
