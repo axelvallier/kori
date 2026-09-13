@@ -23,16 +23,23 @@ values
   ('00000000-0000-0000-0000-000000000000', :'utilisateur_b', 'authenticated',
    'authenticated', 'b@test.local', now(), now());
 
+-- Profils et listes ne sont plus insérés ici : depuis le ticket 06, le
+-- déclencheur `provisionner_compte` sur `auth.users` les a déjà créés au
+-- moment de l'insertion ci-dessus. Les insérer une seconde fois ferait échouer
+-- le script sur la clé primaire de `profiles`, et donnerait deux listes au
+-- compte A — ce que les comptages plus bas interdisent justement.
+--
+-- Les listes reçoivent ici des identifiants fixes, parce que psql n'interpole
+-- pas ses variables à l'intérieur d'un bloc `do $$ ... $$` : les assertions qui
+-- suivent ont besoin d'écrire l'identifiant de la liste de B en toutes lettres,
+-- et A n'a par construction aucun moyen de le lire.
+update public.lists set id = 'aaaaaaaa-0000-0000-0000-000000000001'
+ where owner_id = :'utilisateur_a';
+update public.lists set id = 'bbbbbbbb-0000-0000-0000-000000000001'
+ where owner_id = :'utilisateur_b';
+
 -- Données de départ, insérées en tant que propriétaire de la base, donc sans
 -- passer par RLS. C'est le seul endroit du script où c'est le cas.
-insert into public.profiles (id) values
-  (:'utilisateur_a'),
-  (:'utilisateur_b');
-
-insert into public.lists (id, owner_id, name) values
-  ('aaaaaaaa-0000-0000-0000-000000000001', :'utilisateur_a', 'Liste de A'),
-  ('bbbbbbbb-0000-0000-0000-000000000001', :'utilisateur_b', 'Liste de B');
-
 insert into public.list_items (list_id, raw_fr, position) values
   ('aaaaaaaa-0000-0000-0000-000000000001', 'tomates', 0),
   ('bbbbbbbb-0000-0000-0000-000000000001', 'maito', 0);

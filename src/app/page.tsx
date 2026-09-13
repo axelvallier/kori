@@ -18,6 +18,12 @@ export default async function Home() {
 
   const { count } = await supabase.from("terms").select("id", { count: "exact" }).limit(1);
 
+  // Aucun appel de création ici : la liste est provisionnée par le déclencheur
+  // sur `auth.users` (ticket 06). Si l'application la créait aussi de son côté,
+  // il y aurait deux chemins d'écriture pour la même chose, et un jour deux
+  // listes. Une liste absente est donc une anomalie à voir, pas à rattraper.
+  const { data: listes } = await supabase.from("lists").select("id, name");
+
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 p-6">
       <div>
@@ -27,9 +33,20 @@ export default async function Home() {
         </p>
       </div>
 
-      <p className="rounded-xl border border-black/10 px-4 py-3 text-sm dark:border-white/15">
-        Lexique : <strong>{count ?? 0}</strong> {count === 1 ? "terme" : "termes"}.
-      </p>
+      <div className="rounded-xl border border-black/10 px-4 py-3 text-sm dark:border-white/15">
+        <p>
+          Lexique : <strong>{count ?? 0}</strong> {count === 1 ? "terme" : "termes"}.
+        </p>
+        <p className="mt-1">
+          {listes?.length === 1 ? (
+            <>
+              Liste : <strong>{listes[0].name}</strong>, vide et prête.
+            </>
+          ) : (
+            <>Listes : <strong>{listes?.length ?? 0}</strong>, attendu 1.</>
+          )}
+        </p>
+      </div>
 
       <form action={seDeconnecter}>
         <button
