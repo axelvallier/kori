@@ -51,6 +51,10 @@ Les tickets vivent dans `docs/tickets/`, un fichier par ticket. Ils sont la
 source de vérité, les issues GitHub en sont le reflet. Nommer la branche
 `<numéro>-<slug>`, par exemple `03-schema-rls`.
 
+Le numéro de ticket n'est pas le numéro d'issue : issues et pull requests
+partagent un compteur sur GitHub. Toujours partir du fichier, et passer par
+`/ticket <numéro de fichier>`, qui retrouve l'issue par son titre.
+
 Un ticket est fermé quand ses critères d'acceptation sont vérifiés, pas quand le
 code compile. Les vérifier un par un et dire lesquels ont été testés comment.
 
