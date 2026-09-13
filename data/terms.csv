@@ -1,0 +1,287 @@
+fr,fi,aisle
+pomme,omena,produce
+poire,päärynä,produce
+banane,banaani,produce
+orange,appelsiini,produce
+clémentine,klementiini,produce
+mandarine,mandariini,produce
+citron,sitruuna,produce
+citron vert,limetti,produce
+pamplemousse,greippi,produce
+raisin,viinirypäle,produce
+fraise,mansikka,produce
+framboise,vadelma,produce
+myrtille,mustikka,produce
+airelle,puolukka,produce
+groseille,punaherukka,produce
+cassis,mustaherukka,produce
+argousier,tyrni,produce
+mûre,karhunvatukka,produce
+cerise,kirsikka,produce
+pêche,persikka,produce
+nectarine,nektariini,produce
+abricot,aprikoosi,produce
+prune,luumu,produce
+ananas,ananas,produce
+mangue,mango,produce
+avocat,avokado,produce
+kiwi,kiivi,produce
+melon,meloni,produce
+pastèque,vesimeloni,produce
+grenade,granaattiomena,produce
+tomate,tomaatti,produce
+tomate cerise,kirsikkatomaatti,produce
+concombre,kurkku,produce
+salade,salaatti,produce
+laitue,keräsalaatti,produce
+roquette,rucola,produce
+épinard,pinaatti,produce
+chou,kaali,produce
+chou blanc,valkokaali,produce
+chou rouge,punakaali,produce
+chou-fleur,kukkakaali,produce
+brocoli,parsakaali,produce
+chou de Bruxelles,ruusukaali,produce
+carotte,porkkana,produce
+pomme de terre,peruna,produce
+patate douce,bataatti,produce
+oignon,sipuli,produce
+oignon rouge,punasipuli,produce
+échalote,salottisipuli,produce
+ail,valkosipuli,produce
+poireau,purjo,produce
+céleri,lehtiselleri,produce
+céleri-rave,juuriselleri,produce
+navet,nauris,produce
+betterave,punajuuri,produce
+rutabaga,lanttu,produce
+radis,retiisi,produce
+courgette,kesäkurpitsa,produce
+potiron,kurpitsa,produce
+aubergine,munakoiso,produce
+poivron,paprika,produce
+piment,chili,produce
+champignon de Paris,herkkusieni,produce
+chanterelle,kantarelli,produce
+maïs,maissi,produce
+petits pois,herne,produce
+haricot vert,vihreä papu,produce
+gingembre,inkivääri,produce
+persil,persilja,produce
+basilic,basilika,produce
+coriandre,korianteri,produce
+aneth,tilli,produce
+ciboulette,ruohosipuli,produce
+menthe,minttu,produce
+thym,timjami,produce
+romarin,rosmariini,produce
+pain,leipä,bakery
+pain de seigle,ruisleipä,bakery
+pain complet,täysjyväleipä,bakery
+pain de mie,paahtoleipä,bakery
+baguette,patonki,bakery
+petit pain,sämpylä,bakery
+pain plat,rieska,bakery
+pain croustillant,näkkileipä,bakery
+brioche à la cannelle,korvapuusti,bakery
+brioche,pulla,bakery
+croissant,voisarvi,bakery
+tarte de Carélie,karjalanpiirakka,bakery
+tortilla,tortilla,bakery
+pain pita,pitaleipä,bakery
+gâteau,kakku,bakery
+viande hachée,jauheliha,meat
+viande hachée de bœuf,naudan jauheliha,meat
+viande hachée de porc,porsaan jauheliha,meat
+viande hachée de poulet,broilerin jauheliha,meat
+bœuf,naudanliha,meat
+porc,porsaanliha,meat
+poulet,broileri,meat
+blanc de poulet,broilerin rintafilee,meat
+cuisse de poulet,broilerin koipireisi,meat
+dinde,kalkkuna,meat
+agneau,lampaanliha,meat
+renne,poronliha,meat
+steak,pihvi,meat
+entrecôte,entrecote,meat
+côtelette,kyljys,meat
+filet,filee,meat
+rôti,paisti,meat
+escalope,leike,meat
+saucisse,makkara,meat
+saucisse à griller,grillimakkara,meat
+jambon,kinkku,meat
+bacon,pekoni,meat
+chorizo,chorizo,meat
+boulettes de viande,lihapullat,meat
+tofu,tofu,meat
+seitan,seitan,meat
+protéine de pois,härkis,meat
+saumon,lohi,fish
+saumon fumé,savulohi,fish
+saumon grillé,graavilohi,fish
+truite arc-en-ciel,kirjolohi,fish
+hareng,silli,fish
+hareng de la Baltique,silakka,fish
+corégone,siika,fish
+perche,ahven,fish
+brochet,hauki,fish
+sandre,kuha,fish
+cabillaud,turska,fish
+thon,tonnikala,fish
+crevette,katkarapu,fish
+écrevisse,rapu,fish
+œufs de poisson,mäti,fish
+lait,maito,dairy
+lait entier,täysmaito,dairy
+lait demi-écrémé,kevytmaito,dairy
+lait écrémé,rasvaton maito,dairy
+lait sans lactose,laktoositon maito,dairy
+lait ribot,piimä,dairy
+lait fermenté,viili,dairy
+crème,kerma,dairy
+crème fraîche,ranskankerma,dairy
+crème aigre,kermaviili,dairy
+crème liquide,ruokakerma,dairy
+crème à fouetter,vispikerma,dairy
+fromage blanc,rahka,dairy
+yaourt,jogurtti,dairy
+skyr,skyr,dairy
+beurre,voi,dairy
+margarine,margariini,dairy
+fromage,juusto,dairy
+fromage râpé,juustoraaste,dairy
+fromage frais,tuorejuusto,dairy
+fromage à pain,leipäjuusto,dairy
+emmental,emmental,dairy
+mozzarella,mozzarella,dairy
+feta,fetajuusto,dairy
+parmesan,parmesaani,dairy
+œuf,kananmuna,dairy
+lait d'avoine,kauramaito,dairy
+crème d'avoine,kaurakerma,dairy
+farine,jauho,pantry
+farine de blé,vehnäjauho,pantry
+farine de seigle,ruisjauho,pantry
+chapelure,korppujauho,pantry
+sucre,sokeri,pantry
+sucre glace,tomusokeri,pantry
+cassonade,fariinisokeri,pantry
+sel,suola,pantry
+poivre,pippuri,pantry
+huile,öljy,pantry
+huile d'olive,oliiviöljy,pantry
+huile de colza,rypsiöljy,pantry
+vinaigre,etikka,pantry
+vinaigre balsamique,balsamiviinietikka,pantry
+moutarde,sinappi,pantry
+ketchup,ketsuppi,pantry
+mayonnaise,majoneesi,pantry
+sauce salade,salaatinkastike,pantry
+riz,riisi,pantry
+pâtes,pasta,pantry
+spaghetti,spagetti,pantry
+macaroni,makaroni,pantry
+nouilles,nuudeli,pantry
+lentilles,linssit,pantry
+pois chiches,kikherneet,pantry
+haricots noirs,mustat pavut,pantry
+couscous,couscous,pantry
+quinoa,kvinoa,pantry
+flocons d'avoine,kaurahiutaleet,pantry
+muesli,mysli,pantry
+céréales,murot,pantry
+levure,hiiva,pantry
+levure chimique,leivinjauhe,pantry
+bicarbonate,ruokasooda,pantry
+cacao,kaakao,pantry
+chocolat à pâtisser,leivontasuklaa,pantry
+sucre vanillé,vaniljasokeri,pantry
+cannelle,kaneli,pantry
+curry,curry,pantry
+paprika en poudre,paprikajauhe,pantry
+cumin,juustokumina,pantry
+origan,oregano,pantry
+feuille de laurier,laakerinlehti,pantry
+bouillon cube,liemikuutio,pantry
+tomates concassées,tomaattimurska,pantry
+concentré de tomate,tomaattipyree,pantry
+lait de coco,kookosmaito,pantry
+sauce soja,soijakastike,pantry
+miel,hunaja,pantry
+confiture,hillo,pantry
+sirop,siirappi,pantry
+pâte à tartiner,suklaalevite,pantry
+beurre de cacahuète,maapähkinävoi,pantry
+thon en conserve,tonnikalasäilyke,pantry
+maïs en conserve,säilykemaissi,pantry
+olives,oliivit,pantry
+cornichons,maustekurkku,pantry
+café,kahvi,pantry
+café moulu,suodatinkahvi,pantry
+thé,tee,pantry
+légumes surgelés,pakastevihannekset,frozen
+épinards surgelés,pakastepinaatti,frozen
+baies surgelées,pakastemarjat,frozen
+frites,ranskalaiset perunat,frozen
+pizza surgelée,pakastepizza,frozen
+bâtonnets de poisson,kalapuikot,frozen
+pâte feuilletée,lehtitaikina,frozen
+glace,jäätelö,frozen
+chocolat,suklaa,snacks
+bonbons,karkki,snacks
+réglisse,lakritsi,snacks
+salmiak,salmiakki,snacks
+chips,sipsit,snacks
+cacahuètes,maapähkinät,snacks
+amandes,mantelit,snacks
+noix,saksanpähkinät,snacks
+noisettes,hasselpähkinät,snacks
+biscuits,keksit,snacks
+popcorn,popcorn,snacks
+barre chocolatée,suklaapatukka,snacks
+eau,vesi,drinks
+eau minérale,kivennäisvesi,drinks
+jus,mehu,drinks
+jus d'orange,appelsiinitäysmehu,drinks
+jus de pomme,omenamehu,drinks
+sirop de baies,marjamehu,drinks
+limonade,limsa,drinks
+cola,kola,drinks
+bière,olut,drinks
+cidre,siideri,drinks
+boisson énergisante,energiajuoma,drinks
+papier toilette,wc-paperi,household
+essuie-tout,talouspaperi,household
+serviettes en papier,lautasliinat,household
+liquide vaisselle,astianpesuaine,household
+pastilles lave-vaisselle,konetiskitabletit,household
+lessive,pyykinpesuaine,household
+adoucissant,huuhteluaine,household
+nettoyant multi-usage,yleispuhdistusaine,household
+sac poubelle,roskapussi,household
+éponge,pesusieni,household
+film alimentaire,tuorekelmu,household
+papier aluminium,alumiinifolio,household
+papier cuisson,leivinpaperi,household
+allumettes,tulitikut,household
+bougie,kynttilä,household
+piles,paristot,household
+savon,saippua,hygiene
+gel douche,suihkusaippua,hygiene
+shampoing,shampoo,hygiene
+après-shampoing,hoitoaine,hygiene
+dentifrice,hammastahna,hygiene
+brosse à dents,hammasharja,hygiene
+fil dentaire,hammaslanka,hygiene
+déodorant,deodorantti,hygiene
+mouchoirs,nenäliinat,hygiene
+coton-tige,pumpulipuikot,hygiene
+rasoir,partakone,hygiene
+mousse à raser,parranajovaahto,hygiene
+crème hydratante,kosteusvoide,hygiene
+crème solaire,aurinkovoide,hygiene
+protections hygiéniques,terveyssiteet,hygiene
+tampons,tamponit,hygiene
+couches,vaipat,hygiene
+pansements,laastarit,hygiene
