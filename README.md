@@ -48,6 +48,16 @@ Les services exclus ne servent pas encore et la pile complète ne tient pas dans
 5 Go de RAM. `colima stop` rend la mémoire, `colima start` la reprend sans
 retélécharger.
 
+Le lexique initial s'importe depuis `data/terms.csv` :
+
+```bash
+npm run seed:terms:local   # vers la base locale
+npm run seed:terms         # vers la base décrite par .env.local
+```
+
+Le script est idempotent : une seconde exécution n'insère rien. Il annonce en
+clair l'hôte qu'il vise avant d'écrire, parce qu'il écrit.
+
 `supabase/tests/isolation.sql` s'exécute dans une transaction annulée à la fin :
 il ne laisse aucune donnée derrière lui, y compris si on le colle dans l'éditeur
 SQL d'une base réelle.
