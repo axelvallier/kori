@@ -8,10 +8,11 @@ finnois.
 
 ## État
 
-Socle Next.js en place, lot M0 en cours.
+Lot M0 terminé : application déployée, base migrée, lexique de 286 termes. M1 en cours.
 
 * `docs/HANDOFF.md` : la mémoire du projet, contexte du cadrage et raisons des choix
 * `docs/CADRAGE.md` : problème, périmètre, décisions techniques, modèle de données
+* `docs/REX-M0.md` : retour d'expérience du lot M0, pièges rencontrés et questions ouvertes
 * `docs/BACKLOG.md` : les vingt et un tickets, par lot
 * `docs/tickets/` : un fichier par ticket, source de vérité des issues GitHub
 

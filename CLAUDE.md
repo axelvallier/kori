@@ -6,8 +6,10 @@ Liste de courses bilingue : on saisit en français, la liste affiche le finnois,
 et un connecteur Claude (MCP) la remplit à partir d'une recette.
 
 Le cadrage fait autorité et n'est pas recopié ici. `docs/CADRAGE.md` porte le
-périmètre, les décisions D1 à D5 et le modèle de données ; `docs/HANDOFF.md`
-porte les raisons de ces choix et les options écartées. Les relire avant de
+périmètre, les décisions D1 à D6 et le modèle de données ; `docs/HANDOFF.md`
+porte les raisons de ces choix et les options écartées ; `docs/REX-M0.md` porte
+les pièges rencontrés pendant la réalisation et les questions restées ouvertes —
+le lire avant de reprendre le travail. Les relire avant de
 proposer une décision qui les contredit, et me le signaler si c'est le cas.
 
 ## Stack
