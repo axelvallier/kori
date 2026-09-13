@@ -132,6 +132,49 @@ begin
   if n <> 1 then raise exception 'rattrapage rejoué : % liste(s), attendu 1', n; end if;
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- Le rattrapage ignore les comptes supprimés en douceur
+-- ---------------------------------------------------------------------------
+
+-- Supabase supprime en douceur : la ligne reste dans `auth.users` avec
+-- `deleted_at` renseignée. Un rattrapage qui ne filtrerait pas rendrait à un
+-- compte effacé un profil neuf et une liste.
+
+\set efface '44444444-4444-4444-4444-444444444444'
+
+insert into auth.users (instance_id, id, aud, role, email, created_at, updated_at, deleted_at)
+values ('00000000-0000-0000-0000-000000000000', :'efface', 'authenticated',
+        'authenticated', 'efface@test.local', now(), now(), now());
+
+-- Le déclencheur vient de provisionner ce compte, puisqu'il ne regarde que
+-- l'insertion. On efface ce qu'il a créé pour se placer dans la situation
+-- qu'examine le rattrapage : un compte supprimé, sans profil ni liste.
+delete from public.lists where owner_id = :'efface';
+delete from public.profiles where id = :'efface';
+
+insert into public.profiles (id)
+select users.id from auth.users users
+where users.deleted_at is null
+on conflict (id) do nothing;
+
+insert into public.lists (owner_id, name)
+select users.id, 'Ostoslista'
+from auth.users users
+where users.deleted_at is null
+  and not exists (select 1 from public.lists where lists.owner_id = users.id);
+
+do $$
+declare n integer;
+begin
+  select count(*) into n from public.lists
+   where owner_id = '44444444-4444-4444-4444-444444444444';
+  if n <> 0 then raise exception 'compte supprimé : % liste(s) ressuscitée(s)', n; end if;
+
+  select count(*) into n from public.profiles
+   where id = '44444444-4444-4444-4444-444444444444';
+  if n <> 0 then raise exception 'compte supprimé : % profil(s) ressuscité(s)', n; end if;
+end $$;
+
 \echo 'provisionnement : tous les critères du ticket 06 sont vérifiés'
 
 rollback;
