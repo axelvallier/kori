@@ -1,67 +1,44 @@
+import { seDeconnecter } from "@/app/auth/actions";
 import { createClient } from "@/lib/supabase/server";
 
-type Etat =
-  | { statut: "ok"; termes: number }
-  | { statut: "table-absente" }
-  | { statut: "erreur"; code: string };
-
 /**
- * Interroge le lexique. Tant que le ticket 03 n'a pas créé les tables, la
- * réponse est une erreur `PGRST205`, « table introuvable » — et c'est une
- * réponse utile : elle prouve que l'URL répond et que la clé publiable est
- * acceptée. Une clé invalide donnerait un 401, une URL fausse une erreur
- * réseau. Le même code servira tel quel une fois la table créée.
+ * Écran de contrôle temporaire. Le ticket 08 le remplace par la liste.
+ *
+ * Il sert pour l'instant à prouver deux choses d'un coup d'œil : que la session
+ * arrive bien jusqu'au composant serveur, et que le lexique devient visible dès
+ * qu'il y a une session — la politique de lecture de `terms` est `to
+ * authenticated`, donc un visiteur sans session compte zéro terme sur une table
+ * qui en contient des centaines.
  */
-async function sonderLexique(): Promise<Etat> {
+export default async function Home() {
   const supabase = await createClient();
 
-  // Surtout pas `head: true`. Une requête HEAD vers une table absente renvoie
-  // un 404 au corps vide, et postgrest-js convertit ce cas précis en 204 sans
-  // erreur (rustine de son issue 295). La sonde afficherait alors « 0 terme »
-  // pour une table qui n'existe pas. Le GET renvoie un corps JSON lisible.
-  const { count, error } = await supabase
-    .from("terms")
-    .select("id", { count: "exact" })
-    .limit(1);
+  const { data: claims } = await supabase.auth.getClaims();
+  const email = claims?.claims.email as string | undefined;
 
-  if (!error) return { statut: "ok", termes: count ?? 0 };
-  if (error.code === "PGRST205") return { statut: "table-absente" };
-  return { statut: "erreur", code: error.code ?? "inconnu" };
-}
-
-export default async function Home() {
-  const etat = await sonderLexique();
+  const { count } = await supabase.from("terms").select("id", { count: "exact" }).limit(1);
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
-      <h1 className="text-3xl font-semibold tracking-tight">Kori</h1>
-      <p className="max-w-sm text-sm text-black/60 dark:text-white/60">
-        Liste de courses bilingue français / finnois.
+    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 p-6">
+      <div>
+        <h1 className="text-3xl font-semibold tracking-tight">Kori</h1>
+        <p className="mt-1 text-sm text-black/60 dark:text-white/60">
+          Session ouverte{email ? ` pour ${email}` : ""}.
+        </p>
+      </div>
+
+      <p className="rounded-xl border border-black/10 px-4 py-3 text-sm dark:border-white/15">
+        Lexique : <strong>{count ?? 0}</strong> {count === 1 ? "terme" : "termes"}.
       </p>
 
-      {/* Écran de contrôle temporaire : le ticket 08 le remplace par la liste. */}
-      <div className="mt-4 rounded-lg border border-black/10 px-4 py-3 text-sm dark:border-white/15">
-        {etat.statut === "ok" && (
-          <p>
-            Supabase répond. Lexique : <strong>{etat.termes}</strong>{" "}
-            {etat.termes === 1 ? "terme" : "termes"}.
-          </p>
-        )}
-        {etat.statut === "table-absente" && (
-          <p>
-            Supabase répond, la clé est acceptée. La table{" "}
-            <code className="font-mono">terms</code> reste à créer (ticket 03).
-          </p>
-        )}
-        {etat.statut === "erreur" && (
-          // Le code seul, jamais le message : cette page est publique et un
-          // message d'erreur PostgREST décrit volontiers le schéma.
-          <p>
-            Supabase a refusé la requête. Code{" "}
-            <code className="font-mono">{etat.code}</code>.
-          </p>
-        )}
-      </div>
+      <form action={seDeconnecter}>
+        <button
+          type="submit"
+          className="min-h-12 w-full rounded-xl border border-black/15 px-4 text-base font-medium dark:border-white/20"
+        >
+          Se déconnecter
+        </button>
+      </form>
     </main>
   );
 }
