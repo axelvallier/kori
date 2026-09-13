@@ -31,7 +31,7 @@ npm run typecheck  # types des routes + tsc --noEmit
    Ni clé, ni jeton, ni URL de projet Supabase, y compris en exemple ou en
    commentaire. Les variables attendues vivent dans `.env.example`, vides.
 
-2. **La clé de service Supabase ne sort pas du serveur.** Elle contourne toutes
+2. **La clé secrète Supabase ne sort pas du serveur.** Elle contourne toutes
    les politiques RLS. On y accède uniquement par `serverEnv()` dans
    `src/lib/env.ts`, jamais depuis un composant client, jamais derrière un nom
    préfixé `NEXT_PUBLIC_`.

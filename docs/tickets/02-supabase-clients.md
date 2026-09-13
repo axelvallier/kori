@@ -11,7 +11,7 @@ Ce ticket met en place l'accès, pas encore les tables.
 ## À faire
 
 * Créer le projet Supabase en région européenne (Francfort ou Stockholm)
-* Variables d'environnement : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+* Variables d'environnement : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (voir D6)
 * Installer `@supabase/supabase-js` et `@supabase/ssr`
 * Deux fabriques de client : `lib/supabase/server.ts` (cookies, contexte serveur) et `lib/supabase/client.ts` (navigateur)
 * Reporter les variables dans Vercel, environnements Preview et Production
@@ -20,5 +20,5 @@ Ce ticket met en place l'accès, pas encore les tables.
 ## Critères d'acceptation
 
 * une page serveur exécute une requête triviale et affiche son résultat
-* `SUPABASE_SERVICE_ROLE_KEY` n'apparaît dans aucun fichier importé côté client
+* `SUPABASE_SECRET_KEY` n'apparaît dans aucun fichier importé côté client
 * le déploiement Vercel fonctionne avec les mêmes variables

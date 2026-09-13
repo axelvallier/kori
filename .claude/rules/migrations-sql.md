@@ -9,7 +9,7 @@ paths:
 
 Toute nouvelle table naît avec ses politiques, dans la **même migration** que le
 `create table`. Une table livrée sans politique est lisible par n'importe quel
-porteur de la clé anonyme, qui est publique par conception.
+porteur de la clé publiable, qui est publique par conception.
 
 ```sql
 alter table public.<table> enable row level security;

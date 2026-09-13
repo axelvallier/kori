@@ -49,8 +49,8 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://exemple-ci.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: valeur-bidon-pour-le-build-ci
-          SUPABASE_SERVICE_ROLE_KEY: valeur-bidon-pour-le-build-ci
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: valeur-bidon-pour-le-build-ci
+          SUPABASE_SECRET_KEY: valeur-bidon-pour-le-build-ci
 
       # En dernier : une alerte publiée sur une dépendance transitive ne doit pas
       # masquer une vraie erreur de lint ou de build.

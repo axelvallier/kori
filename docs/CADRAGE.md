@@ -93,6 +93,30 @@ Conséquence sur les lots : l'installabilité passe du lot de finition au lot M1
 parce qu'une liste de courses qu'on ouvre depuis le tiroir d'applications n'est
 pas la même chose qu'un onglet à retrouver.
 
+### D6. Clés d'API Supabase au nouveau format
+
+Supabase a remplacé les clés `anon` et `service_role`, qui étaient des jetons
+JWT, par une clé publiable (`sb_publishable_…`) et une clé secrète
+(`sb_secret_…`). Les anciennes restent valides mais sont annoncées comme
+dépréciées d'ici fin 2026, soit quelques mois après le début de ce projet.
+
+Le projet part donc directement sur le nouveau format, et les variables
+d'environnement prennent les noms correspondants :
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` et `SUPABASE_SECRET_KEY`. Le premier suit
+la convention du guide de démarrage officiel de Supabase pour Next.js, ce qui
+évite d'avoir à traduire mentalement chaque exemple de la documentation.
+
+Option écartée : conserver les noms `NEXT_PUBLIC_SUPABASE_ANON_KEY` et
+`SUPABASE_SERVICE_ROLE_KEY` en y mettant les valeurs du nouveau format. Le
+câblage aurait été strictement identique, mais chaque nom aurait désigné une clé
+qui n'existe plus. C'est le genre d'écart qui ne coûte rien le premier jour et
+une heure de confusion six mois plus tard, quand personne ne se souvient
+pourquoi la variable ne porte pas le nom de ce qu'elle contient.
+
+Ce qui ne change pas : la clé secrète contourne toutes les politiques de
+sécurité au niveau des lignes. Elle reste côté serveur, et ne prend jamais un nom
+préfixé `NEXT_PUBLIC_`.
+
 ## Modèle de données
 
 * `profiles` : un enregistrement par compte

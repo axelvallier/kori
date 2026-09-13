@@ -7,7 +7,7 @@ paths:
 
 Cette route est la seule surface de l'application accessible sans session
 Supabase : elle s'authentifie par un jeton porté dans l'URL (décision D3) et
-travaille avec la clé de service, qui contourne toutes les politiques RLS. Le
+travaille avec la clé secrète, qui contourne toutes les politiques RLS. Le
 filet de sécurité de la base ne joue donc pas ici. Le filtrage est à la charge
 de ce code, à chaque requête.
 

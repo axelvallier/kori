@@ -10,7 +10,7 @@ import { z } from "zod";
  * derriere un nom prefixe `NEXT_PUBLIC_`, ou lue depuis un composant client,
  * serait donc publiee.
  *
- * Pour la cle de service Supabase, la consequence est totale : elle contourne
+ * Pour la cle secrete Supabase, la consequence est totale : elle contourne
  * les politiques de securite au niveau des lignes et donne un acces complet a
  * la base. C'est le risque numero un de cette stack, d'ou la garde d'execution
  * de `serverEnv()`.
@@ -40,7 +40,7 @@ const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: requise("NEXT_PUBLIC_SUPABASE_URL")
     .url("doit etre une URL absolue")
     .refine((value) => value.startsWith("https://"), "doit etre en https"),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: requise("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: requise("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"),
 });
 
 /**
@@ -50,7 +50,7 @@ const publicSchema = z.object({
  */
 const publicParsed = publicSchema.safeParse({
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 });
 
 if (!publicParsed.success) {
@@ -69,7 +69,7 @@ export const publicEnv = publicParsed.data;
 /* -------------------------------------------------------------------------- */
 
 const serverSchema = z.object({
-  SUPABASE_SERVICE_ROLE_KEY: requise("SUPABASE_SERVICE_ROLE_KEY"),
+  SUPABASE_SECRET_KEY: requise("SUPABASE_SECRET_KEY"),
 });
 
 type ServerEnv = z.infer<typeof serverSchema>;
@@ -88,7 +88,7 @@ let serverCache: ServerEnv | undefined;
 export function serverEnv(): ServerEnv {
   if (typeof window !== "undefined") {
     throw new Error(
-      "serverEnv() a ete appele depuis le navigateur. La cle de service Supabase" +
+      "serverEnv() a ete appele depuis le navigateur. La cle secrete Supabase" +
         " contourne toutes les politiques de securite : elle ne doit jamais" +
         " sortir du serveur. Deplace cet appel dans un composant serveur, une" +
         " route handler ou une server action.",
@@ -100,7 +100,7 @@ export function serverEnv(): ServerEnv {
   }
 
   const parsed = serverSchema.safeParse({
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
   });
 
   if (!parsed.success) {
