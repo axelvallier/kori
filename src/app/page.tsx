@@ -2,8 +2,13 @@ import { seDeconnecter } from "@/app/auth/actions";
 import { Liste } from "@/app/liste";
 import { chargerListe } from "@/lib/liste";
 
-export default async function Page() {
-  const liste = await chargerListe();
+export default async function Page({ searchParams }: PageProps<"/">) {
+  const [liste, params] = await Promise.all([chargerListe(), searchParams]);
+
+  // Le raccourci du manifeste ouvre « /?ajout=1 » : l'application s'ouvre avec
+  // le champ prêt et le clavier levé, ce qui est tout l'intérêt d'un appui long
+  // sur l'icône plutôt que d'ouvrir l'application puis viser le champ.
+  const saisieDirecte = params.ajout === "1";
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col p-4">
@@ -22,7 +27,7 @@ export default async function Page() {
       </header>
 
       {liste ? (
-        <Liste lignes={liste.lignes} />
+        <Liste lignes={liste.lignes} saisieDirecte={saisieDirecte} />
       ) : (
         // Le déclencheur du ticket 06 rend ce cas impossible pour un compte
         // neuf. Il reste affiché plutôt que masqué : une liste absente est une
