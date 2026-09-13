@@ -36,10 +36,33 @@ function formatIssues(error: z.ZodError): string {
 /* Variables publiques                                                        */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * La pile Supabase locale ecoute en http sur la boucle locale. Exiger https
+ * partout rendrait le developpement local impossible ; accepter http partout
+ * laisserait passer une URL de production en clair. L'exception est donc bornee
+ * a l'hote, pas au mode d'execution : une URL distante en http reste refusee
+ * meme en developpement.
+ */
+function urlSupabaseAcceptable(value: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+
+  if (url.protocol === "https:") return true;
+
+  return (
+    url.protocol === "http:" &&
+    (url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "[::1]")
+  );
+}
+
 const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: requise("NEXT_PUBLIC_SUPABASE_URL")
     .url("doit etre une URL absolue")
-    .refine((value) => value.startsWith("https://"), "doit etre en https"),
+    .refine(urlSupabaseAcceptable, "doit etre en https, sauf sur la boucle locale"),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: requise("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"),
 });
 

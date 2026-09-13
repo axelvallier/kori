@@ -9,7 +9,6 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +21,25 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* La police du projet, pas celle laissée par le gabarit de départ : `Arial`
+     annulait la variable chargée par next/font et la hiérarchie typographique
+     que le ticket 19 demande. */
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Le geste principal est un appui sur une ligne. Sans cette règle, Android
+   attend 300 ms pour savoir si c'est un double-appui de zoom, et chaque coche
+   paraît molle. */
+button {
+  touch-action: manipulation;
+}
+
+/* Le surlignage bleu d'Android au moment de l'appui : remplacé par un retour
+   plus discret, sinon chaque ligne clignote en bleu franc dans un magasin. */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active {
+  opacity: 0.6;
 }

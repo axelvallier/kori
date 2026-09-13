@@ -155,11 +155,15 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "http://127.0.0.1:3000"
+site_url = "http://localhost:3000"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+# Le lien magique revient sur /auth/callback : sans ces motifs, GoTrue refuse
+# l'`emailRedirectTo` et renvoie le navigateur sur le site_url sans code. Le
+# projet hebergé porte les siens dans Authentication -> URL Configuration, y
+# compris le motif des préversions Vercel.
+additional_redirect_urls = ["http://localhost:3000/**", "http://127.0.0.1:3000/**"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -216,6 +220,13 @@ web3 = 30
 # secret = ""
 
 [auth.email]
+# Kori se connecte uniquement par lien magique. Il n'existe pas de reglage
+# « desactiver le mot de passe » : ni ici, ni dans le tableau de bord. Le mot de
+# passe est neutralise autrement, et plus surement — aucun compte n'en a jamais
+# un. Un compte nait de `signInWithOtp`, l'application n'appelle nulle part
+# `signInWithPassword` et n'expose aucun champ de mot de passe, donc
+# l'authentification par mot de passe echoue faute de mot de passe a comparer.
+# A revoir si un ecran de reglages proposait un jour d'en definir un.
 # Allow/disallow new user signups via email to your project.
 enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
