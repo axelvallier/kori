@@ -117,6 +117,38 @@ Ce qui ne change pas : la clé secrète contourne toutes les politiques de
 sécurité au niveau des lignes. Elle reste côté serveur, et ne prend jamais un nom
 préfixé `NEXT_PUBLIC_`.
 
+### D7. Le lien magique s'échange côté serveur, en PKCE
+
+L'authentification par lien magique peut se câbler de deux façons. La plus
+répandue fait tout depuis le navigateur : le client Supabase demande le lien, et
+la page de retour échange le code contre une session en JavaScript. Kori fait
+l'inverse — la demande part d'une action serveur, et `/auth/callback` est une
+route serveur.
+
+Trois raisons, dans l'ordre où elles pèsent :
+
+L'adresse saisie est **validée côté serveur avec zod**, comme toute entrée
+utilisateur de ce projet. Une validation faite dans le navigateur n'est qu'un
+confort d'affichage.
+
+Les cookies de session sont posés par le serveur, donc `httpOnly`. Une
+déconnexion depuis le navigateur laisserait des cookies que le JavaScript ne
+peut pas effacer.
+
+Le flux reste **PKCE de bout en bout** : l'action serveur dépose un vérificateur
+dans un cookie, et l'échange n'aboutit que si le code reçu par email lui répond.
+
+**Conséquence assumée, et elle se présentera comme un bug** : un lien magique
+ouvert sur un autre appareil que celui qui l'a demandé échoue. Le vérificateur
+est dans le navigateur d'origine. C'est le prix de PKCE, et c'est aussi sa
+protection — un lien intercepté ne suffit pas à ouvrir une session. L'écran de
+connexion le dit en toutes lettres au lieu d'afficher une erreur technique.
+
+Option écartée : le flux implicite, sans vérificateur, qui aurait laissé le lien
+fonctionner depuis n'importe quel appareil. Il fait transiter le jeton dans le
+fragment de l'URL, où seul le navigateur le voit — donc un échange côté serveur
+devient impossible, et les deux premières raisons ci-dessus tombent avec lui.
+
 ## Modèle de données
 
 * `profiles` : un enregistrement par compte
