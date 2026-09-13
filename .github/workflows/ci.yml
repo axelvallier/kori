@@ -29,7 +29,10 @@ jobs:
       - name: Installer Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          # Aligné sur ce que Vercel déploie : le champ engines de package.json
+          # demande >=22, plage que Vercel fait correspondre à sa 24.x la plus
+          # récente. Tester sur une autre majeure ferait mentir cette CI.
+          node-version: '24'
           cache: npm
 
       - name: Installer les dépendances

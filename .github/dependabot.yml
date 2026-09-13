@@ -10,9 +10,25 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - "type:chore"
-    # Les mises à jour mineures et correctives des dépendances de développement
-    # arrivent groupées : une pull request par semaine plutôt qu'une par paquet.
     groups:
+      # react et react-dom sont liés par une dépendance de pair : react-dom@X
+      # exige react@^X. Bumpés séparément, chaque pull request casse
+      # l'installation avec une erreur ERESOLVE, et les deux échouent. Ils
+      # doivent bouger ensemble, avec leurs types.
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      # Même raison : eslint-config-next est épinglé sur la version de next.
+      next:
+        patterns:
+          - "next"
+          - "eslint-config-next"
+      # Les mises à jour mineures et correctives des dépendances de
+      # développement arrivent groupées : une pull request par semaine plutôt
+      # qu'une par paquet.
       dev-dependencies:
         dependency-type: development
         update-types:
