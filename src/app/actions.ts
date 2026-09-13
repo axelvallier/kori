@@ -77,3 +77,73 @@ export async function ajouterItem(texte: string): Promise<ResultatAjout> {
   revalidatePath("/");
   return { ok: true };
 }
+
+/* -------------------------------------------------------------------------- */
+/* Cocher, supprimer, vider                                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Aucune de ces trois opérations ne filtre sur le compte, et c'est délibéré :
+ * le client porte l'identité de l'utilisateur, donc RLS refuse en base tout
+ * item qui n'est pas le sien. Un filtre applicatif en plus ne protégerait rien
+ * de nouveau et laisserait croire que c'est lui la barrière.
+ *
+ * Les trois sont **idempotentes**, ce qui n'est pas un détail de style : le
+ * client les rejoue quand le réseau tombe, et rejouer « coche cet item » ou
+ * « supprime cet item » ne peut pas faire de dégât, là où rejouer un ajout
+ * créerait un doublon. C'est pour ça que `ajouterItem` n'est pas rejoué.
+ */
+
+const identifiant = z.uuid("Identifiant invalide");
+
+export async function basculerCoche(id: string, coche: boolean): Promise<ResultatAjout> {
+  const analyse = identifiant.safeParse(id);
+  if (!analyse.success) return { ok: false, message: "Identifiant invalide" };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("list_items")
+    .update({ checked: coche })
+    .eq("id", analyse.data);
+
+  if (error) {
+    console.error("basculerCoche", error.code, error.message);
+    return { ok: false, message: "La coche n'a pas été enregistrée." };
+  }
+
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function supprimerItem(id: string): Promise<ResultatAjout> {
+  const analyse = identifiant.safeParse(id);
+  if (!analyse.success) return { ok: false, message: "Identifiant invalide" };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("list_items").delete().eq("id", analyse.data);
+
+  if (error) {
+    console.error("supprimerItem", error.code, error.message);
+    return { ok: false, message: "La suppression n'est pas passée." };
+  }
+
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function viderCoches(): Promise<ResultatAjout> {
+  const supabase = await createClient();
+
+  // `eq("checked", true)` sans identifiant de liste : RLS borne la suppression
+  // aux items du compte. En v1 il n'y a qu'une liste par compte ; le jour où il
+  // y en aura plusieurs, il faudra ajouter le filtre de liste ici.
+  const { error } = await supabase.from("list_items").delete().eq("checked", true);
+
+  if (error) {
+    console.error("viderCoches", error.code, error.message);
+    return { ok: false, message: "Le vidage n'est pas passé." };
+  }
+
+  revalidatePath("/");
+  return { ok: true };
+}
