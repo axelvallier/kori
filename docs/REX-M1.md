@@ -141,6 +141,39 @@ Next 16 a par ailleurs renommé `middleware.ts` en `proxy.ts`, avec la fonction
 `node_modules/next/dist/docs/` le dit ; un exemple trouvé en ligne aurait donné
 l'ancien nom.
 
+### Le sous-agent `revue-securite`, enfin lancé
+
+Il n'avait jamais tourné pendant M0. Sur les deux migrations du lot, il a sorti
+deux vraies prises, corrigées avant fusion.
+
+**La garde anti-collision cédait une entrée du lexique en silence.** La
+migration des ligatures laissait la ligne à ligature en place si la forme sans
+ligature existait déjà, et terminait sans rien dire. Or n'importe quel
+utilisateur authentifié peut écrire dans `terms` : la politique d'insertion ne
+vérifie que `created_by = auth.uid()`, jamais que `fr_normalized` vaille bien
+`normalize(fr)` — c'est précisément le trou que le ticket 18 doit fermer.
+Quelqu'un pouvait donc déposer un « boeuf » de son choix avant que la migration
+ne tourne : la garde l'aurait pris pour un jumeau légitime, la vraie ligne
+serait restée sur « bœuf », et serait devenue définitivement injoignable, `terms`
+n'ayant ni update ni delete. La migration échoue désormais bruyamment en nommant
+les lignes restées.
+
+**Le rattrapage ressuscitait les comptes supprimés.** Supabase supprime en
+douceur : la ligne reste dans `auth.users` avec `deleted_at` renseignée. Sans
+filtre, un compte effacé à la demande de son propriétaire se revoyait attribuer
+un profil neuf et une liste.
+
+La troisième constatation était un faux positif instructif : l'agent affirmait
+que le déclencheur rendait `isolation.sql` inexécutable. C'est vrai de la
+version présente sur `main`, et l'adaptation vit sur la branche du ticket 06 —
+l'agent a lu l'arbre de travail pendant un changement de branche. **Un
+sous-agent lit le disque, pas la branche qu'on croit.** Le lancer sur un arbre
+stable, ou lui donner les chemins des fichiers versionnés à comparer.
+
+Les deux corrections ont été reportées dans la pile par fusions successives
+plutôt que par rebasage : réécrire l'historique de six branches déjà poussées
+aurait demandé autant de poussées forcées.
+
 ## Questions laissées ouvertes
 
 **Les accents dans `normalize()`.** Toujours ouverte, et plus chère à chaque
@@ -181,7 +214,9 @@ lot M1 le concernent directement :
 * **Vérifier la WebAPK sur un vrai téléphone.** Chrome sans interface dit que
   rien ne s'oppose à l'installation ; la présence de l'entrée dans le tiroir et
   dans les paramètres système se constate sur l'appareil.
-* **Le sous-agent `revue-securite`** a enfin tourné, sur les deux migrations du
-  lot. Il reste à le lancer sur la route du connecteur au lot M2.
+* **Le sous-agent `revue-securite`** a tourné sur les deux migrations du lot, et
+  y a trouvé deux vraies prises (voir plus haut). Il reste à le lancer sur la
+  route du connecteur au lot M2, où il compte double : la clé secrète y
+  contourne RLS.
 * **Signalement privé de failles** et **pull requests Dependabot** : inchangé
   depuis M0.
