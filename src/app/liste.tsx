@@ -1,9 +1,10 @@
 "use client";
 
-import { useOptimistic, useRef, useState } from "react";
+import { startTransition, useOptimistic, useRef, useState } from "react";
 
-import { ajouterItem } from "./actions";
+import { ajouterItem, basculerCoche, supprimerItem, viderCoches } from "./actions";
 import type { Ligne } from "@/lib/liste";
+import { avecReprise } from "@/lib/reprise";
 
 /**
  * Ligne provisoire, affichée le temps de l'aller-retour. Son identifiant est
@@ -21,15 +22,60 @@ function provisoire(texte: string): Ligne {
   };
 }
 
+type Geste =
+  | { type: "ajout"; texte: string }
+  | { type: "coche"; id: string; valeur: boolean }
+  | { type: "suppression"; id: string }
+  | { type: "vidage" };
+
+function appliquerGeste(etat: Ligne[], geste: Geste): Ligne[] {
+  switch (geste.type) {
+    case "ajout":
+      return [...etat, provisoire(geste.texte)];
+    case "coche":
+      return etat.map((l) => (l.id === geste.id ? { ...l, checked: geste.valeur } : l));
+    case "suppression":
+      return etat.filter((l) => l.id !== geste.id);
+    case "vidage":
+      return etat.filter((l) => !l.checked);
+  }
+}
+
 export function Liste({ lignes }: { lignes: Ligne[] }) {
-  const [affichees, ajouterAffichee] = useOptimistic(lignes, (etat: Ligne[], texte: string) => [
-    ...etat,
-    provisoire(texte),
-  ]);
+  const [affichees, jouer] = useOptimistic(lignes, appliquerGeste);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [confirmeVidage, setConfirmeVidage] = useState(false);
   const champ = useRef<HTMLInputElement>(null);
 
-  async function action(donnees: FormData) {
+  /**
+   * Coalescence des appuis rapides. Tant qu'une écriture est en vol pour un
+   * item, la suivante ne part pas : on garde seulement l'état voulu, et on
+   * l'envoie au retour si la valeur a changé entre-temps. Cinq appuis de suite
+   * font donc au plus deux requêtes, jamais cinq — et la dernière porte
+   * toujours l'état final.
+   */
+  const voulu = useRef(new Map<string, boolean>());
+  const enVol = useRef(new Set<string>());
+
+  async function ecrireCoche(id: string, valeur: boolean) {
+    voulu.current.set(id, valeur);
+    if (enVol.current.has(id)) return;
+
+    enVol.current.add(id);
+    try {
+      let envoye: boolean | undefined;
+      while (voulu.current.get(id) !== envoye) {
+        envoye = voulu.current.get(id)!;
+        const resultat = await avecReprise(() => basculerCoche(id, envoye!));
+        if (!resultat.ok) throw new Error(resultat.message);
+      }
+    } finally {
+      enVol.current.delete(id);
+      voulu.current.delete(id);
+    }
+  }
+
+  async function ajouter(donnees: FormData) {
     const texte = String(donnees.get("texte") ?? "").trim();
     if (texte === "") return;
 
@@ -40,15 +86,79 @@ export function Liste({ lignes }: { lignes: Ligne[] }) {
     champ.current?.focus();
 
     setErreur(null);
-    ajouterAffichee(texte);
+    jouer({ type: "ajout", texte });
 
+    // Pas de reprise sur l'ajout : il n'est pas idempotent, et le rejouer
+    // créerait un doublon. Voir lib/reprise.ts.
     const resultat = await ajouterItem(texte);
     if (!resultat.ok) setErreur(resultat.message);
   }
 
+  function basculer(ligne: Ligne) {
+    if (ligne.id.startsWith("provisoire-")) return;
+
+    startTransition(async () => {
+      setErreur(null);
+      jouer({ type: "coche", id: ligne.id, valeur: !ligne.checked });
+      try {
+        await ecrireCoche(ligne.id, !ligne.checked);
+      } catch {
+        // L'état optimiste retombe tout seul quand la transition se termine :
+        // la ligne revient visiblement à ce qu'elle était, et le message dit
+        // pourquoi. Un échec silencieux ferait croire la course faite.
+        setErreur("La coche n'a pas été enregistrée. Elle est revenue en arrière.");
+      }
+    });
+  }
+
+  function supprimer(ligne: Ligne) {
+    if (ligne.id.startsWith("provisoire-")) return;
+
+    startTransition(async () => {
+      setErreur(null);
+      jouer({ type: "suppression", id: ligne.id });
+      try {
+        const resultat = await avecReprise(() => supprimerItem(ligne.id));
+        if (!resultat.ok) throw new Error(resultat.message);
+      } catch {
+        setErreur("La suppression n'est pas passée. La ligne est revenue.");
+      }
+    });
+  }
+
+  function vider() {
+    // Confirmation légère : le bouton change de texte et attend un second
+    // appui. Une boîte de dialogue demanderait de viser deux fois, téléphone
+    // en main et caddie dans l'autre.
+    if (!confirmeVidage) {
+      setConfirmeVidage(true);
+      setTimeout(() => setConfirmeVidage(false), 3000);
+      return;
+    }
+    setConfirmeVidage(false);
+
+    startTransition(async () => {
+      setErreur(null);
+      jouer({ type: "vidage" });
+      try {
+        const resultat = await avecReprise(() => viderCoches());
+        if (!resultat.ok) throw new Error(resultat.message);
+      } catch {
+        setErreur("Le vidage n'est pas passé. Les lignes sont revenues.");
+      }
+    });
+  }
+
+  // Les cochées descendent. Le tri de JavaScript est stable, donc l'ordre
+  // d'ajout est conservé à l'intérieur de chaque groupe.
+  const ordonnees = [...affichees].sort(
+    (a, b) => Number(a.checked) - Number(b.checked),
+  );
+  const nbCochees = affichees.filter((l) => l.checked).length;
+
   return (
     <>
-      <form action={action} className="flex gap-2">
+      <form action={ajouter} className="flex gap-2">
         <input
           ref={champ}
           name="texte"
@@ -78,17 +188,38 @@ export function Liste({ lignes }: { lignes: Ligne[] }) {
         </p>
       )}
 
-      {affichees.length === 0 ? (
+      {ordonnees.length === 0 ? (
         <p className="mt-8 text-balance text-sm text-black/55 dark:text-white/55">
           Ta liste est vide. Écris « tomates » ou « du lait » : le finnois
           s&apos;affiche à côté, c&apos;est lui que tu liras en rayon.
         </p>
       ) : (
         <ul className="mt-4">
-          {affichees.map((ligne) => (
-            <LigneItem key={ligne.id} ligne={ligne} />
+          {ordonnees.map((ligne) => (
+            <LigneItem
+              key={ligne.id}
+              ligne={ligne}
+              onBasculer={() => basculer(ligne)}
+              onSupprimer={() => supprimer(ligne)}
+            />
           ))}
         </ul>
+      )}
+
+      {nbCochees > 0 && (
+        <button
+          type="button"
+          onClick={vider}
+          className={`mt-4 min-h-12 self-start rounded-xl px-4 text-sm font-medium ${
+            confirmeVidage
+              ? "bg-red-600 text-white"
+              : "border border-black/15 dark:border-white/20"
+          }`}
+        >
+          {confirmeVidage
+            ? `Confirmer : retirer ${nbCochees} ligne${nbCochees > 1 ? "s" : ""}`
+            : `Vider les cochés (${nbCochees})`}
+        </button>
       )}
     </>
   );
@@ -102,39 +233,85 @@ export function Liste({ lignes }: { lignes: Ligne[] }) {
  * ligne sur deux hauteurs. Dix items doivent tenir sans défilement, et une
  * liste dont les lignes changent de hauteur se relit mal en marchant.
  */
-function LigneItem({ ligne }: { ligne: Ligne }) {
+function LigneItem({
+  ligne,
+  onBasculer,
+  onSupprimer,
+}: {
+  ligne: Ligne;
+  onBasculer: () => void;
+  onSupprimer: () => void;
+}) {
   const enCours = ligne.id.startsWith("provisoire-");
 
   return (
     <li
-      className={`flex items-center gap-3 border-b border-black/5 py-1.5 dark:border-white/10 ${
+      className={`flex items-center border-b border-black/5 dark:border-white/10 ${
         enCours ? "opacity-50" : ""
       }`}
     >
-      <div className="min-w-0 flex-1">
-        {ligne.terme ? (
-          <>
-            <p className="truncate text-[1.35rem] font-semibold leading-tight">
-              {ligne.terme.fi}
-            </p>
-            <p className="truncate text-[0.8rem] leading-tight text-black/50 dark:text-white/50">
-              {ligne.raw_fr}
-            </p>
-          </>
-        ) : (
-          <>
-            {/* Traduction manquante : le gris dit qu'il manque quelque chose, et
-                le français reprend la place principale — c'est le seul mot
-                lisible qui reste, il ne doit pas être relégué en sous-titre. */}
-            <p className="truncate text-[1.1rem] font-medium leading-tight">
-              {ligne.raw_fr}
-            </p>
-            <p className="truncate text-[0.8rem] leading-tight text-black/35 dark:text-white/35">
-              {enCours ? "ajout…" : "traduction manquante"}
-            </p>
-          </>
-        )}
-      </div>
+      {/* La ligne entière est la cible : c'est le geste le plus courant, et le
+          seul qu'on fasse en marchant. Un bouton et non un `onClick` sur le
+          `li`, pour que le clavier et les lecteurs d'écran l'atteignent. */}
+      <button
+        type="button"
+        onClick={onBasculer}
+        aria-pressed={ligne.checked}
+        className="flex min-h-12 min-w-0 flex-1 items-center gap-3 py-1.5 text-left"
+      >
+        <span
+          aria-hidden
+          className={`grid size-5 shrink-0 place-items-center rounded border text-xs ${
+            ligne.checked
+              ? "border-transparent bg-foreground text-background"
+              : "border-black/25 dark:border-white/30"
+          }`}
+        >
+          {ligne.checked ? "✓" : ""}
+        </span>
+
+        <span className={`min-w-0 flex-1 ${ligne.checked ? "opacity-40" : ""}`}>
+          {ligne.terme ? (
+            <>
+              <span
+                className={`block truncate text-[1.35rem] font-semibold leading-tight ${
+                  ligne.checked ? "line-through" : ""
+                }`}
+              >
+                {ligne.terme.fi}
+              </span>
+              <span className="block truncate text-[0.8rem] leading-tight text-black/50 dark:text-white/50">
+                {ligne.raw_fr}
+              </span>
+            </>
+          ) : (
+            <>
+              {/* Traduction manquante : le gris dit qu'il manque quelque chose,
+                  et le français reprend la place principale — c'est le seul mot
+                  lisible qui reste, il ne doit pas être relégué en sous-titre. */}
+              <span
+                className={`block truncate text-[1.1rem] font-medium leading-tight ${
+                  ligne.checked ? "line-through" : ""
+                }`}
+              >
+                {ligne.raw_fr}
+              </span>
+              <span className="block truncate text-[0.8rem] leading-tight text-black/35 dark:text-white/35">
+                {enCours ? "ajout…" : "traduction manquante"}
+              </span>
+            </>
+          )}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={onSupprimer}
+        aria-label={`Supprimer ${ligne.raw_fr}`}
+        className="grid min-h-12 min-w-12 shrink-0 place-items-center text-lg text-black/35 dark:text-white/35"
+      >
+        ✕
+      </button>
     </li>
   );
 }
