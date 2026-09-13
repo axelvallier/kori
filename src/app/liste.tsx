@@ -5,6 +5,7 @@ import { startTransition, useOptimistic, useRef, useState } from "react";
 import { ajouterItem, basculerCoche, supprimerItem, viderCoches } from "./actions";
 import type { Ligne } from "@/lib/liste";
 import { avecReprise } from "@/lib/reprise";
+import { parseEntry } from "@/lib/saisie";
 
 /**
  * Ligne provisoire, affichée le temps de l'aller-retour. Son identifiant est
@@ -12,10 +13,15 @@ import { avecReprise } from "@/lib/reprise";
  * sert comme clé, et deux clés identiques feraient clignoter la liste.
  */
 function provisoire(texte: string): Ligne {
+  // La même analyse que côté serveur, pour que la ligne provisoire montre déjà
+  // la quantité à droite et le produit seul à gauche. Sans ça, « 500g de
+  // farine » s'afficherait en entier une demi-seconde puis se réorganiserait.
+  const { quantite, produit } = parseEntry(texte);
+
   return {
     id: `provisoire-${texte}-${Date.now()}`,
-    raw_fr: texte,
-    quantity: null,
+    raw_fr: produit,
+    quantity: quantite === "" ? null : quantite,
     checked: false,
     created_at: new Date().toISOString(),
     terme: null,
@@ -302,6 +308,19 @@ function LigneItem({
             </>
           )}
         </span>
+
+        {/* La quantité à droite, en chiffres tabulaires pour que les nombres
+            s'alignent d'une ligne à l'autre. Rien n'est affiché quand elle est
+            absente — surtout pas un « null » ni un tiret. */}
+        {ligne.quantity && (
+          <span
+            className={`shrink-0 text-[0.95rem] tabular-nums text-black/45 dark:text-white/45 ${
+              ligne.checked ? "line-through opacity-60" : ""
+            }`}
+          >
+            {ligne.quantity}
+          </span>
+        )}
       </button>
 
       <button

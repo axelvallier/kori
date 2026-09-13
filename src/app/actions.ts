@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { parseEntry } from "@/lib/saisie";
 import { createClient } from "@/lib/supabase/server";
 import { resolveTerm } from "@/lib/terms";
 
@@ -44,7 +45,11 @@ export async function ajouterItem(texte: string): Promise<ResultatAjout> {
     return { ok: false, message: "Liste introuvable. Reconnecte-toi." };
   }
 
-  const terme = await resolveTerm(supabase, analyse.data.texte);
+  // La quantité est détachée avant d'interroger le lexique : « 500g de farine »
+  // n'y est pas, « farine » oui.
+  const { quantite, produit } = parseEntry(analyse.data.texte);
+
+  const terme = await resolveTerm(supabase, produit);
 
   // La position se lit juste avant d'écrire. Deux ajouts simultanés peuvent
   // tomber sur la même : `created_at` départage alors, et l'ordre reste celui
@@ -61,10 +66,13 @@ export async function ajouterItem(texte: string): Promise<ResultatAjout> {
 
   const { error } = await supabase.from("list_items").insert({
     list_id: liste.id,
-    // Le texte saisi est conservé tel quel, jamais la forme normalisée :
+    // Le produit est conservé tel que tapé, jamais sa forme normalisée :
     // l'utilisateur doit se relire. La normalisation ne sert qu'à retrouver le
     // terme.
-    raw_fr: analyse.data.texte,
+    raw_fr: produit,
+    // `null` et non chaîne vide : c'est ce que la colonne attend quand il n'y
+    // a pas de quantité, et l'écran n'affiche alors rien du tout.
+    quantity: quantite === "" ? null : quantite,
     term_id: terme?.id ?? null,
     position: (derniere?.position ?? 0) + 1,
   });
