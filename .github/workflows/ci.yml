@@ -44,6 +44,12 @@ jobs:
       - name: Vérification des types
         run: npm run typecheck
 
+      # Le lanceur est celui de Node, qui exécute le TypeScript en retirant les
+      # types. Aucune dépendance de test à installer, donc rien de plus à
+      # maintenir ici.
+      - name: Tests unitaires
+        run: npm test
+
       # Valeurs syntaxiquement valides et volontairement fausses. `src/lib/env.ts`
       # valide les variables publiques au chargement du module : dès qu'une page
       # l'importera, un build sans ces variables échouerait. Aucune n'est un

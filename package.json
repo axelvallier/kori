@@ -12,6 +12,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
+    "test": "node --test 'src/**/*.test.ts'",
     "db:reset": "supabase db reset",
     "db:test": "docker exec -i supabase_db_kori psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q < supabase/tests/isolation.sql",
     "db:test:provisionnement": "docker exec -i supabase_db_kori psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q < supabase/tests/provisionnement.sql",
