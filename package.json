@@ -10,7 +10,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "db:reset": "supabase db reset",
+    "db:test": "docker exec -i supabase_db_kori psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q < supabase/tests/isolation.sql"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
