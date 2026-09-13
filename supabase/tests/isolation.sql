@@ -41,8 +41,12 @@ insert into public.mcp_tokens (user_id, token_hash, prefix) values
   (:'utilisateur_a', 'hachage-de-a', 'kori_a'),
   (:'utilisateur_b', 'hachage-de-b', 'kori_b');
 
+-- Deux termes de test, un par compte. Leurs formes normalisées ne peuvent pas
+-- entrer en collision avec le lexique réel : ce test doit rester juste sur une
+-- base déjà peuplée par `npm run seed:terms`.
 insert into public.terms (fr, fr_normalized, fi, aisle, created_by) values
-  ('tomate', 'tomate', 'tomaatti', 'produce', :'utilisateur_a');
+  ('zzz test a', 'zzz test a', 'zzz testi a', 'produce', :'utilisateur_a'),
+  ('zzz test b', 'zzz test b', 'zzz testi b', 'produce', :'utilisateur_b');
 
 -- ---------------------------------------------------------------------------
 -- Critère 1 : le compte A n'obtient aucune ligne du compte B
@@ -72,9 +76,11 @@ begin
   select count(*) into n from public.profiles where id <> auth.uid();
   if n <> 0 then raise exception 'A voit le profil d''un autre compte'; end if;
 
-  -- Le lexique est global et partagé, c'est voulu (décision D2).
-  select count(*) into n from public.terms;
-  if n <> 1 then raise exception 'A voit % termes, le lexique doit être partagé', n; end if;
+  -- Le lexique est global et partagé, c'est voulu (décision D2). A doit voir
+  -- son terme comme celui de B. On compte les deux témoins plutôt que la table
+  -- entière, dont la taille dépend du seed.
+  select count(*) into n from public.terms where fr_normalized like 'zzz test%';
+  if n <> 2 then raise exception 'A voit % termes de test sur 2, le lexique doit être partagé', n; end if;
 end $$;
 
 -- A ne doit pas pouvoir écrire dans la liste de B.
@@ -138,7 +144,7 @@ end $$;
 do $$
 begin
   insert into public.terms (fr, fr_normalized, fi, created_by)
-  values ('Tomates', 'tomate', 'tomaatti', auth.uid());
+  values ('Zzz Test A', 'zzz test a', 'zzz testi a', auth.uid());
   raise exception 'un doublon sur fr_normalized a été accepté';
 exception
   when unique_violation then null;  -- attendu
@@ -149,11 +155,11 @@ end $$;
 do $$
 declare n integer;
 begin
-  update public.terms set fi = 'detourne' where fr_normalized = 'tomate';
+  update public.terms set fi = 'detourne' where fr_normalized = 'zzz test a';
   get diagnostics n = row_count;
   if n <> 0 then raise exception 'le lexique a pu être modifié (% ligne(s))', n; end if;
 
-  delete from public.terms where fr_normalized = 'tomate';
+  delete from public.terms where fr_normalized = 'zzz test a';
   get diagnostics n = row_count;
   if n <> 0 then raise exception 'le lexique a pu être vidé (% ligne(s))', n; end if;
 end $$;
@@ -162,7 +168,7 @@ end $$;
 do $$
 begin
   insert into public.terms (fr, fr_normalized, fi, created_by)
-  values ('lait', 'lait', 'maito', '11111111-1111-1111-1111-111111111111');
+  values ('zzz test c', 'zzz test c', 'zzz testi c', '11111111-1111-1111-1111-111111111111');
   raise exception 'B a pu insérer un terme au nom de A';
 exception
   when insufficient_privilege then null;  -- attendu
