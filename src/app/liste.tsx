@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useOptimistic, useRef, useState } from "react";
+import { startTransition, useEffect, useOptimistic, useRef, useState } from "react";
 
 import { ajouterItem, basculerCoche, supprimerItem, viderCoches } from "./actions";
 import type { Ligne } from "@/lib/liste";
@@ -47,11 +47,21 @@ function appliquerGeste(etat: Ligne[], geste: Geste): Ligne[] {
   }
 }
 
-export function Liste({ lignes }: { lignes: Ligne[] }) {
+export function Liste({
+  lignes,
+  saisieDirecte = false,
+}: {
+  lignes: Ligne[];
+  saisieDirecte?: boolean;
+}) {
   const [affichees, jouer] = useOptimistic(lignes, appliquerGeste);
   const [erreur, setErreur] = useState<string | null>(null);
   const [confirmeVidage, setConfirmeVidage] = useState(false);
   const champ = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (saisieDirecte) champ.current?.focus();
+  }, [saisieDirecte]);
 
   /**
    * Coalescence des appuis rapides. Tant qu'une écriture est en vol pour un
