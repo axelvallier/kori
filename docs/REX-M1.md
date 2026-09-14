@@ -56,10 +56,45 @@ La règle est désormais dans `CLAUDE.md` : après toute fusion touchant
 `supabase/migrations/`, pousser vers la base hébergée et vérifier le
 comportement, pas seulement la liste.
 
-**Ce qu'il faudrait vraiment** : que la CI refuse de laisser diverger le local
-et le distant, ou applique les migrations elle-même à la fusion. Les deux
-demandent des secrets dans GitHub et une décision sur ce qu'on autorise à
-toucher la production automatiquement. Question ouverte, pas encore tranchée.
+**Tranché le 14 septembre 2026 : la fusion applique les migrations.**
+`.github/workflows/migrations.yml` s'en charge, et le choix mérite d'être
+expliqué parce qu'il n'est pas le réflexe habituel.
+
+L'option prudente — un voyant rouge qui prévient, un humain qui applique — a été
+écartée par le porteur du projet, avec l'argument qui l'a emporté : *« je ne
+connais rien aux bases de données, donc si une migration a un défaut, elle
+passera que je sois dans la boucle ou non »*. Un humain qui ne peut pas juger
+n'ajoute pas de sécurité, il ajoute un délai.
+
+Ce qui a déplacé la cible, c'est un test : une migration **fautive** ne passe
+jamais à moitié. Postgres exécute chaque fichier dans une transaction — vérifié
+en en fabriquant une qui crée une table, insère une ligne, puis plante : zéro
+trace. Le danger n'est donc pas la migration cassée, qui rebondit toute seule,
+mais **celle qui fonctionne parfaitement et fait la mauvaise chose**. D'où un
+garde-fou qui vise cette classe-là et pas une autre : `scripts/verifier-migrations.mjs`
+refuse ce qui perd des données sans signature explicite, et n'accepte aucune
+signature pour la désactivation de RLS.
+
+**Le workflow ne se déclenche jamais sur une pull request.** Le dépôt est
+public, une pull request exécute le code de son auteur, et un workflow qui
+détient les identifiants de la base ne doit tourner que sur du code déjà
+accepté.
+
+**Et il n'utilise aucun jeton d'accès personnel.** La première version en
+demandait un, pour `supabase link` — elle a échoué sur
+« Your account does not have the necessary privileges », le jeton restreint
+n'ayant pas les droits que `link` réclame, droits que la documentation ne
+publie pas (les jetons à portée limitée sont en alpha). Plutôt que de tâtonner
+case par case, le besoin a été supprimé : `db push` et `migration list`
+acceptent `--db-url`, donc une chaîne de connexion suffit. Trois secrets
+deviennent un, et surtout l'identifiant valable sur **tout le compte** Supabase
+disparaît au profit d'un identifiant qui n'ouvre qu'une base.
+
+Deux pièges qui coûteraient une panne chacun, notés sur place dans le workflow :
+la chaîne doit être celle du **pooler en mode session**, les machines de GitHub
+n'ayant pas d'IPv6 ; et elle contient le mot de passe de la base, donc
+**réinitialiser ce mot de passe casse le secret** et impose de le remettre à
+jour.
 
 ### Le lexique écrivait « œuf », personne ne tape « œuf »
 
