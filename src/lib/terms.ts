@@ -110,7 +110,7 @@ export type Terme = {
 };
 
 /**
- * Retrouve la ligne du lexique correspondant à un texte saisi en français.
+ * Retrouve les lignes du lexique correspondant à un lot de textes français.
  *
  * Correspondance **exacte** sur la forme normalisée, et rien d'autre : pas
  * d'appel réseau vers un traducteur, pas de modèle de langue, pas de
@@ -118,22 +118,36 @@ export type Terme = {
  * qui se trompe est pire que pas de traduction du tout — devant le rayon,
  * personne ne vérifie.
  *
+ * Le lot existe pour le connecteur : une recette arrive d'un coup, et résoudre
+ * huit ingrédients en huit allers-retours ferait huit fois le trajet réseau
+ * pour la même réponse. `resolveTerm` passe par ici, de sorte qu'il n'y ait
+ * toujours qu'un seul chemin de résolution — voir .claude/rules/lexique.md.
+ *
+ * La clé du dictionnaire rendu est la **forme normalisée**, pas la saisie :
+ * deux saisies qui convergent (« Tomates » et « des tomates ») partagent une
+ * entrée, et l'appelant retrouve la sienne en normalisant à son tour.
+ *
  * Le client est passé en argument plutôt qu'importé : ce module est aussi
- * importé par le seed, qui utilise la clé secrète, et le sera par le connecteur.
- * Chacun apporte le sien, et ce fichier n'a pas à savoir lequel.
+ * importé par le seed, qui utilise la clé secrète, et par le connecteur, qui
+ * utilise la sienne. Chacun apporte le sien, et ce fichier n'a pas à savoir
+ * lequel.
  */
-export async function resolveTerm(
+export async function resolveTermes(
   supabase: SupabaseClient,
-  fr: string,
-): Promise<Terme | null> {
-  const forme = normalize(fr);
-  if (forme === "") return null;
+  frs: string[],
+): Promise<Map<string, Terme>> {
+  const formes = [...new Set(frs.map(normalize).filter((forme) => forme !== ""))];
+  const trouves = new Map<string, Terme>();
+
+  // Une saisie vide ne part pas en requête : `in` sur une liste vide est une
+  // requête qui ne peut rien rendre.
+  if (formes.length === 0) return trouves;
 
   const { data, error } = await supabase
     .from("terms")
-    .select("id, fr, fi, aisle")
-    .eq("fr_normalized", forme)
-    .maybeSingle<Terme>();
+    .select("id, fr, fi, aisle, fr_normalized")
+    .in("fr_normalized", formes)
+    .returns<(Terme & { fr_normalized: string })[]>();
 
   if (error) {
     // Volontairement pas de `throw`. Un terme non résolu donne un item sans
@@ -142,9 +156,28 @@ export async function resolveTerm(
     // lexique comme le connecteur savent le rattraper. Lever ici ferait perdre
     // l'ajout lui-même, ce qui est pire — l'utilisateur est debout dans un
     // magasin, il ne retapera pas.
-    console.error("resolveTerm", forme, error.code, error.message);
-    return null;
+    console.error("resolveTermes", formes.length, error.code, error.message);
+    return trouves;
   }
 
-  return data;
+  for (const ligne of data ?? []) {
+    const { fr_normalized, ...terme } = ligne;
+    trouves.set(fr_normalized, terme);
+  }
+
+  return trouves;
+}
+
+/**
+ * Le cas d'un seul terme, celui de la saisie à l'écran. Délègue au lot pour
+ * qu'il n'y ait qu'une règle de résolution à relire, et une seule à corriger.
+ */
+export async function resolveTerm(
+  supabase: SupabaseClient,
+  fr: string,
+): Promise<Terme | null> {
+  const forme = normalize(fr);
+  if (forme === "") return null;
+
+  return (await resolveTermes(supabase, [fr])).get(forme) ?? null;
 }
