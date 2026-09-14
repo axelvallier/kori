@@ -21,7 +21,7 @@ l'ordre du tableau. Même piège qu'au lot M1, même remède : en fusion écras�
 chaque fusion réécrit les SHA de sa base, et la suivante demande un
 `git rebase --onto main <précédente> <suivante>`.
 
-Le connecteur expose huit outils : `ping`, `get_list`, `add_items`,
+Le connecteur expose neuf outils : `ping`, `get_list`, `add_items`,
 `check_items`, `uncheck_items`, `remove_items`, `clear_checked`,
 `list_missing_translations`, `add_translation`.
 
