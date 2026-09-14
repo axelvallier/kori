@@ -16,6 +16,30 @@ Ce que ce n'est pas : ni prix, ni magasins, ni stocks, ni code-barres, ni import
 automatique depuis un site de recettes, ni finnois vers français. Le périmètre
 complet, avec ce qui en est exclu et pourquoi, est dans `docs/CADRAGE.md`.
 
+## Ce dépôt est écrit par un agent
+
+Le code, les migrations, les messages de commit, les descriptions de pull
+request et l'intégralité de cette documentation — titres et textes compris —
+sont écrits et maintenus par **Claude Code**, sous ma direction.
+
+C'est autant le sujet de l'exercice que la liste de courses : voir jusqu'où on
+va sur un projet réel, avec un abonnement Claude et rien d'autre.
+
+Deux conséquences pour qui lit :
+
+**La densité des documents n'est pas une coquetterie, c'est le mécanisme.** Le
+cadrage, les décisions numérotées et les retours d'expérience existent parce
+qu'un agent ne se souvient de rien d'une session à l'autre. Ce qui n'est pas
+écrit est perdu, y compris les raisons d'un choix. C'est une contrainte qui a
+rendu le projet plus documenté que si je l'avais écrit seul.
+
+**Les décisions restent les miennes, et les erreurs aussi.** Le bug le plus
+coûteux du lot M1 — des migrations jamais appliquées à la base hébergée, donc
+une application déployée sur un schéma incomplet — n'a été trouvé ni par les
+tests, ni par la revue de sécurité, ni par l'agent. Il a été trouvé parce que
+j'ai ouvert l'application sur mon téléphone et qu'elle ne marchait pas. C'est
+consigné dans `docs/REX-M1.md`.
+
 ## État
 
 Lots M0 et M1 terminés : application déployée et installable sur Android,
