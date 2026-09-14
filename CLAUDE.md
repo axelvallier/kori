@@ -69,16 +69,20 @@ l'application se déploie en vert sur une base qui n'a pas la table, la colonne
 ou le déclencheur qu'elle attend. C'est arrivé au lot M1, et ça s'est vu par un
 écran d'erreur sur le téléphone du porteur, pas par une alerte.
 
-Après toute fusion qui touche `supabase/migrations/` :
+Le workflow `.github/workflows/migrations.yml` les applique désormais à la
+fusion sur `main`. Il ne se déclenche jamais sur une pull request : le dépôt est
+public, et un workflow qui détient le mot de passe de la base ne doit tourner
+que sur du code déjà accepté.
 
-```bash
-npx supabase db push --dry-run   # ce qui partirait
-npx supabase db push             # l'appliquer
-npx supabase migration list --linked   # local et distant doivent coïncider
-```
+Ce qui reste à la charge de qui écrit une migration :
 
-Et vérifier le comportement, pas seulement la liste : une migration appliquée
-ne prouve pas qu'un déclencheur se déclenche.
+* la faire passer devant `npm run migrations:verifier`, qui refuse ce qui perd
+  des données sans signature explicite ;
+* **vérifier le comportement après coup**, pas seulement la liste des
+  migrations : une migration appliquée ne prouve pas qu'un déclencheur se
+  déclenche ;
+* en cas de doute, reprendre la main avec `npx supabase db push --dry-run` et
+  `npx supabase migration list --linked`.
 
 ## Repères
 

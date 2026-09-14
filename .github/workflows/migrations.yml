@@ -1,0 +1,90 @@
+name: Migrations
+
+# Vercel déploie le code sur push. Il ne déploie pas le schéma. Sans ce
+# workflow, les deux partent en décalé et rien ne le signale : l'application se
+# déploie en vert sur une base qui n'a pas encore la table ou le déclencheur
+# qu'elle attend. C'est arrivé au lot M1, voir docs/REX-M1.md.
+#
+# CE WORKFLOW NE SE DÉCLENCHE QUE SUR `main`, JAMAIS SUR UNE PULL REQUEST.
+#
+# Ce n'est pas un détail de confort. Le dépôt est public : n'importe qui peut
+# ouvrir une pull request, et une pull request fait tourner le code de son
+# auteur. Un workflow qui détient le mot de passe de la base ne doit s'exécuter
+# que sur du code déjà accepté — donc après une fusion, que seul le propriétaire
+# peut faire. GitHub ne transmet d'ailleurs jamais les secrets à une pull
+# request venue d'un fork, mais on ne s'appuie pas sur cette seule barrière.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - ".github/workflows/migrations.yml"
+  # Permet de rejouer à la main depuis l'onglet Actions, par exemple après avoir
+  # corrigé une migration refusée.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Deux migrations ne doivent jamais partir en même temps vers la même base.
+# `cancel-in-progress` reste à false : interrompre une application en cours est
+# exactement ce qu'on ne veut pas.
+concurrency:
+  group: migrations-base-hebergee
+  cancel-in-progress: false
+
+jobs:
+  appliquer:
+    name: Appliquer les migrations à la base hébergée
+    runs-on: ubuntu-latest
+    # Les secrets vivent dans cet environnement, pas dans le dépôt : seul ce
+    # workflow peut les lire. C'est aussi ici qu'on peut exiger une approbation
+    # manuelle avant chaque application, en un clic, si le besoin apparaît.
+    environment: supabase
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Installer Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      # Avant tout accès à la base. Une migration destructrice non signée
+      # s'arrête ici, donc sans que le mot de passe ait servi à quoi que ce soit.
+      - name: Garde contre les migrations destructrices
+        run: node scripts/verifier-migrations.mjs
+
+      - name: Installer la CLI Supabase
+        uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1
+        with:
+          version: latest
+
+      - name: Lier le projet hébergé
+        # La référence du projet est un secret comme les autres : la règle 1
+        # interdit qu'une URL de projet Supabase entre dans un fichier versionné,
+        # y compris en commentaire.
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: supabase link --project-ref "$PROJECT_REF"
+
+      - name: Ce qui va être appliqué
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase db push --dry-run
+
+      - name: Appliquer
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase db push
+
+      # Le journal doit montrer que local et distant coïncident après coup :
+      # c'est la seule commande qui compare les deux côtés, et c'est son absence
+      # qui avait laissé passer le décalage du lot M1.
+      - name: Vérifier l'alignement
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase migration list --linked
