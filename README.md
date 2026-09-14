@@ -117,7 +117,14 @@ attendait. Le récit est dans `docs/REX-M1.md`.
 Depuis, le workflow `.github/workflows/migrations.yml` les applique à la fusion
 sur `main`. Il ne se déclenche jamais sur une pull request : le dépôt est
 public, une pull request exécute le code de son auteur, et un workflow qui
-détient le mot de passe de la base ne doit tourner que sur du code déjà accepté.
+détient les identifiants de la base ne doit tourner que sur du code déjà
+accepté.
+
+Il lit un seul secret, `SUPABASE_DB_URL`, rangé dans l'environnement GitHub
+`supabase` plutôt que dans le dépôt. Deux choses à savoir : la chaîne doit être
+celle du **pooler en mode session**, les machines de GitHub n'ayant pas d'IPv6 ;
+et comme elle contient le mot de passe de la base, **réinitialiser ce mot de
+passe casse le workflow** tant que le secret n'est pas remis à jour.
 
 Deux garde-fous, dans cet ordre :
 
