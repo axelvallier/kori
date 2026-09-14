@@ -20,9 +20,14 @@ moindre outil, et n'exécuter aucun outil sur un contexte partiel.
 ## Le message d'erreur ne doit rien distinguer
 
 Jeton inconnu, jeton révoqué, jeton mal formé : **la même réponse 401, le même
-corps, le même délai**. Distinguer les cas transforme la route en oracle qui
-confirme qu'un jeton a existé. Le détail va dans les logs serveur, pas dans la
-réponse.
+corps**. Distinguer les cas transforme la route en oracle qui confirme qu'un
+jeton a existé. Le détail va dans les logs serveur, pas dans la réponse.
+
+Le délai compte pour les deux cas qui portent une information — **inconnu et
+révoqué doivent suivre le même chemin, au même coût** : un jeton révoqué qui
+coûterait un aller-retour de plus se signalerait au chronomètre. Un jeton mal
+formé, lui, peut être rejeté avant la base : sa forme n'apprend rien à qui l'a
+écrite.
 
 Ne pas renvoyer non plus le nombre de tentatives restantes, l'identifiant du
 compte, ni la date de révocation.

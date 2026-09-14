@@ -20,6 +20,18 @@ export type Contexte = {
    * cas normal : le déclencheur du ticket 06 en crée une à l'inscription. Les
    * outils qui touchent à la liste doivent le dire au lieu d'échouer sur une
    * requête vide.
+   *
+   * **Invariant, et c'est lui qui rend les outils sûrs** : cet identifiant est
+   * toujours relu de la base par `owner_id`, jamais reçu de l'appelant. C'est
+   * ce qui autorise les requêtes sur `list_items` à ne filtrer que sur
+   * `list_id` — la table ne porte pas de colonne propriétaire, et remonter à
+   * `lists` à chaque requête coûterait une jointure pour rétablir une propriété
+   * déjà établie ici.
+   *
+   * Le jour où un outil acceptera un identifiant de liste en argument, cet
+   * invariant tombe et **tous** ces filtres deviennent insuffisants d'un coup.
+   * Un `list_id` venu de Claude est une donnée à vérifier contre `userId`,
+   * jamais une valeur à poser dans ce champ.
    */
   listId: string | null;
   /** Client à clé secrète, qui contourne RLS. Chaque requête filtre à la main. */
