@@ -63,6 +63,23 @@ code compile. Les vérifier un par un et dire lesquels ont été testés comment
 Une décision technique nouvelle s'ajoute à `docs/CADRAGE.md` en `D<n>`, avec sa
 raison et les options écartées, dans le même format que D1 à D5.
 
+**Une migration fusionnée n'est pas une migration appliquée.** Vercel déploie le
+code, jamais le schéma. Les deux partent donc en décalé, et rien ne le signale :
+l'application se déploie en vert sur une base qui n'a pas la table, la colonne
+ou le déclencheur qu'elle attend. C'est arrivé au lot M1, et ça s'est vu par un
+écran d'erreur sur le téléphone du porteur, pas par une alerte.
+
+Après toute fusion qui touche `supabase/migrations/` :
+
+```bash
+npx supabase db push --dry-run   # ce qui partirait
+npx supabase db push             # l'appliquer
+npx supabase migration list --linked   # local et distant doivent coïncider
+```
+
+Et vérifier le comportement, pas seulement la liste : une migration appliquée
+ne prouve pas qu'un déclencheur se déclenche.
+
 ## Repères
 
 * `src/lib/env.ts` : variables d'environnement validées, frontière client/serveur
