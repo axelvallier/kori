@@ -234,6 +234,21 @@ l'authentification du domaine, qui suppose d'en avoir un.
 Deuxième effet, invisible jusqu'au jour où il mord : les liens partent d'une
 adresse Supabase partagée, ce qui les envoie plus volontiers en indésirables.
 
+**Et ce quota est une faille de disponibilité, pas seulement une gêne.** Il est
+partagé par tout le projet, et l'inscription est ouverte à qui veut. N'importe
+qui tombant sur l'application peut donc demander deux liens de connexion et
+épuiser le quota — ce qui empêche le porteur du projet de se connecter à son
+propre compte, sans aucun accès privilégié et sans rien casser. Coût de
+l'attaque : deux formulaires.
+
+C'est pour ça que le lien de production n'est pas affiché sur la page du dépôt.
+Mais cacher l'adresse ne protège de rien : la vraie réponse est de **fermer
+l'inscription** tant qu'il n'y a qu'un utilisateur — Authentication → Providers
+→ Email, « Allow new users to sign up ». Un compte déjà créé continue de se
+connecter ; un inconnu ne peut plus en créer. Réversible en un clic le jour où
+il faut ajouter quelqu'un, et sans effet sur le lot M2, dont le connecteur
+s'authentifie par jeton.
+
 Décision remise volontairement, pas oubliée. Pas de ticket tant que la condition
 de déclenchement n'est pas remplie.
 
