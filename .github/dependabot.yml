@@ -26,6 +26,14 @@ updates:
         patterns:
           - "next"
           - "eslint-config-next"
+      # Troisième couple lié par une dépendance de pair : mcp-handler 2.x
+      # exige @modelcontextprotocol/server ^2.0.0. Le connecteur est la seule
+      # pièce du projet que Claude appelle de l'extérieur ; un des deux paquets
+      # bumpé seul le casserait sans qu'aucun écran ne bouge.
+      mcp:
+        patterns:
+          - "mcp-handler"
+          - "@modelcontextprotocol/*"
       # Les mises à jour mineures et correctives des dépendances de
       # développement arrivent groupées : une pull request par semaine plutôt
       # qu'une par paquet.
