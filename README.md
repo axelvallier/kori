@@ -42,9 +42,11 @@ consigné dans `docs/REX-M1.md`.
 
 ## État
 
-Lots M0 et M1 terminés : application déployée et installable sur Android,
+Lots M0 à M2 terminés : application déployée et installable sur Android,
 authentification par lien magique, liste bilingue avec quantités, lexique de
-286 termes. Lot M2 à suivre — le connecteur Claude.
+286 termes, et le connecteur Claude qui remplit la liste à partir d'une recette.
+Lots M3 et M4 à suivre — le groupement par rayon, l'écran de lexique, le hors
+ligne et la réception d'un partage Android.
 
 * `docs/HANDOFF.md` : la mémoire du projet, contexte du cadrage et raisons des choix
 * `docs/CADRAGE.md` : problème, périmètre, décisions techniques, modèle de données
@@ -57,6 +59,93 @@ authentification par lien magique, liste bilingue avec quantités, lexique de
 
 Next.js (App Router) déployé sur Vercel, Supabase pour Postgres et
 l'authentification, serveur MCP exposé par l'application elle-même.
+
+## Brancher le connecteur Claude
+
+C'est la fonctionnalité qui motive le projet : coller une recette dans Claude et
+retrouver les ingrédients dans la liste, en finnois, avant d'aller au magasin.
+
+Le connecteur s'authentifie par un jeton porté dans son adresse (décision D3 du
+cadrage). Il n'y a pas de compte à créer côté Claude, pas d'OAuth : on génère un
+jeton dans Kori, on colle l'adresse dans Claude, c'est tout.
+
+> **Ce jeton vaut l'accès à ta liste.** Qui a l'adresse peut lire et écrire ta
+> liste de courses, sans mot de passe et sans autre vérification. Ne la colle
+> nulle part ailleurs que dans les réglages de Claude, ne la mets pas dans une
+> capture d'écran, et si tu as un doute, révoque : c'est immédiat, et rien
+> d'autre ne casse.
+
+### 1. Générer le jeton dans Kori
+
+Ouvrir **Réglages**, depuis l'en-tête de la liste, puis **Nouveau jeton**. Le
+libellé est facultatif : c'est une note pour toi, « téléphone » ou « Claude
+bureau », qui te dira six mois plus tard lequel couper.
+
+L'adresse complète s'affiche alors **une seule fois**. Elle n'est stockée nulle
+part, pas même en base : Kori n'en garde que l'empreinte. Si tu fermes la
+fenêtre sans copier, il n'y a rien à récupérer — il faut en générer un autre.
+
+![L'écran des réglages de Kori, avec l'adresse du connecteur affichée une seule fois](docs/images/reglages-jeton.png)
+
+*Le jeton de cette capture est un gabarit, pas une vraie valeur.*
+
+### 2. Ajouter le connecteur dans Claude
+
+Dans Claude, **Réglages → Connecteurs → Ajouter un connecteur personnalisé**.
+Coller l'adresse copiée à l'étape précédente, telle quelle, jeton compris. Le
+connecteur ne demande ni identifiant ni autorisation : l'adresse suffit.
+
+Une fois ajouté, il expose sept outils — et le plus simple pour vérifier que
+tout tient est de demander à Claude d'appeler `ping`, qui répond le nom de ta
+liste et son nombre de lignes.
+
+| Outil | Ce qu'il fait |
+|---|---|
+| `ping` | vérifie la chaîne de bout en bout, n'écrit rien |
+| `get_list` | la liste complète, avec identifiants, finnois, quantités et rayons |
+| `add_items` | ajoute des produits, toute une recette en un appel |
+| `check_items`, `uncheck_items` | coche et décoche |
+| `remove_items` | retire des lignes |
+| `clear_checked` | vide ce qui est déjà acheté |
+| `list_missing_translations` | les produits encore affichés en français |
+| `add_translation` | ajoute une traduction au lexique, et répare les lignes qui l'attendaient |
+
+### Trois choses à lui demander
+
+**Remplir la liste à partir d'une recette.** Le cas qui justifie tout le reste :
+
+> Voici une recette de carbonara pour quatre : 400 g de spaghetti, 200 g de
+> lardons, 4 œufs, 100 g de parmesan, du poivre noir. Ajoute les ingrédients à
+> ma liste de courses.
+
+Claude envoie les six produits en un seul appel, au singulier et sans
+préparation — c'est ce que la description de l'outil lui demande. Un produit
+déjà présent n'est pas dupliqué : sa quantité est mise à jour.
+
+**Compléter le lexique.** Un produit absent du lexique s'ajoute quand même, avec
+la mention « traduction manquante ». C'est Claude qui comble le trou :
+
+> Qu'est-ce qui manque en traduction dans ma liste ? Complète le lexique avec
+> les noms tels qu'on les trouve en magasin en Finlande, pas la traduction
+> littérale.
+
+Les lignes concernées affichent le finnois immédiatement, sans rien toucher à
+l'application. Le lexique étant partagé, la traduction profite aussi aux autres
+comptes — y compris à leurs lignes déjà saisies.
+
+**Faire le ménage après les courses.**
+
+> J'ai fini mes courses, retire de ma liste tout ce que j'ai coché.
+
+### Couper un jeton
+
+**Réglages**, puis **Révoquer** en face du jeton, deux fois — le bouton demande
+confirmation. L'effet est immédiat : l'appel suivant du connecteur reçoit un
+refus, sans délai de cache. La ligne reste affichée, barrée, avec sa date : un
+jeton révoqué raconte qu'il a existé et quand il a servi la dernière fois.
+
+Deux jetons peuvent coexister, ce qui permet d'en couper un sans se couper
+soi-même.
 
 ## Développement
 
