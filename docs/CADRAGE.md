@@ -149,6 +149,59 @@ fonctionner depuis n'importe quel appareil. Il fait transiter le jeton dans le
 fragment de l'URL, où seul le navigateur le voit — donc un échange côté serveur
 devient impossible, et les deux premières raisons ci-dessus tombent avec lui.
 
+### D8. Le lexique partagé est borné en forme, pas modéré en contenu
+
+La décision D2 rend le lexique global : n'importe quel compte authentifié peut
+y insérer un terme, et la traduction profite à tous les suivants. Le ticket 14
+ajoute la conséquence qui manquait — le finnois d'un terme est **recopié tel
+quel dans ce que Claude lit** quand il ajoute un produit à une liste.
+
+Un compte peut donc déposer une traduction dont le texte est mis en forme comme
+une consigne. Aucune donnée ne fuit, et l'effet dépend entièrement de ce que le
+modèle fait d'un texte qui n'est pas une instruction — mais le vecteur existe,
+et il a été trouvé par la relecture de sécurité du lot M2, pas par l'usage.
+
+**Et il ne demande plus que la victime coopère.** Le rattachement rétroactif du
+ticket 14 pousse une entrée du lexique vers les lignes **déjà présentes** dans
+les listes des autres comptes. Il suffisait avant d'espérer qu'un autre compte
+demande ce produit-là ; désormais, une entrée déposée rattrape ce qui existe
+déjà. C'est la même mécanique qui répare les listes de tout le monde quand la
+traduction est juste — on ne peut pas garder l'une sans l'autre.
+
+Le levier qui reste ouvert, et il n'appartient pas à cette décision : la
+politique d'insertion de `terms` ne vérifie pas que `fr_normalized` vaut bien
+`normalize(fr)`. Quelqu'un peut donc réserver la forme normalisée d'un terme
+courant en y associant n'importe quoi, et `terms` n'ayant ni update ni delete,
+la réparation demande une migration. **C'est le ticket 18 qui ferme ce trou**,
+et le rattachement rétroactif fait passer sa priorité de « ménage » à
+« prérequis ».
+
+Ce qui a été fait : une contrainte en base borne la **forme** des entrées —
+80 caractères, une seule ligne, pour le français comme pour le finnois. La
+contrainte est en base et non dans le connecteur, parce que le connecteur n'est
+pas le chemin d'écriture : la politique `terms_insert_authenticated` autorise
+déjà l'insertion directe par la Data API avec la clé publiable. Une validation
+dans la route aurait borné un chemin sur deux.
+
+Ce qui n'a pas été fait, et c'est le cœur de la décision : **rien ne modère le
+sens**. Une traduction fausse, ou insultante, reste possible. C'est le prix de
+D2, et il est payé en connaissance de cause tant qu'il n'y a qu'un utilisateur.
+
+Options écartées :
+
+*Réserver l'écriture du lexique à un compte administrateur.* Elle referme le
+seul mécanisme qui rend l'application auto-réparatrice, pour un risque qui
+n'existe qu'à partir du deuxième utilisateur.
+
+*Échapper le finnois avant de le donner à Claude.* Il n'y a rien à échapper :
+le danger n'est pas un caractère, c'est une phrase. Borner la longueur et
+interdire les sauts de ligne retire ce qui rend un texte crédible comme
+consigne, sans prétendre lire dans le sens.
+
+Ce qui déclenchera la reprise de cette décision : l'arrivée d'un deuxième
+utilisateur qui n'est pas de confiance. La même condition que la fermeture des
+inscriptions, notée dans `docs/REX-M1.md`.
+
 ## Modèle de données
 
 * `profiles` : un enregistrement par compte
