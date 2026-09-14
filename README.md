@@ -95,7 +95,7 @@ Dans Claude, **Réglages → Connecteurs → Ajouter un connecteur personnalisé
 Coller l'adresse copiée à l'étape précédente, telle quelle, jeton compris. Le
 connecteur ne demande ni identifiant ni autorisation : l'adresse suffit.
 
-Une fois ajouté, il expose sept outils — et le plus simple pour vérifier que
+Une fois ajouté, il expose neuf outils — et le plus simple pour vérifier que
 tout tient est de demander à Claude d'appeler `ping`, qui répond le nom de ta
 liste et son nombre de lignes.
 
