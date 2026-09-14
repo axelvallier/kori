@@ -61,30 +61,33 @@ jobs:
         with:
           version: latest
 
-      - name: Lier le projet hébergé
-        # La référence du projet est un secret comme les autres : la règle 1
-        # interdit qu'une URL de projet Supabase entre dans un fichier versionné,
-        # y compris en commentaire.
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-        run: supabase link --project-ref "$PROJECT_REF"
-
+      # Un seul secret : la chaîne de connexion à la base, qui contient tout ce
+      # qu'il faut — hôte, port, utilisateur, mot de passe.
+      #
+      # Pas de `supabase link`, donc pas de jeton d'accès personnel. C'est
+      # délibéré : ce jeton vaut pour **tout le compte** Supabase, donc pour les
+      # projets d'aujourd'hui et ceux de demain, alors que ce workflow n'a
+      # besoin que d'écrire le schéma d'une seule base. Un identifiant dont la
+      # portée dépasse l'usage est un identifiant qui finira par servir à autre
+      # chose.
+      #
+      # La chaîne doit être celle du **pooler en mode session**. Les machines
+      # de GitHub n'ont pas d'IPv6, et la connexion directe d'un projet Supabase
+      # n'est plus joignable en IPv4.
       - name: Ce qui va être appliqué
         env:
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: supabase db push --dry-run
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: supabase db push --db-url "$DB_URL" --dry-run
 
       - name: Appliquer
         env:
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: supabase db push
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: supabase db push --db-url "$DB_URL"
 
       # Le journal doit montrer que local et distant coïncident après coup :
       # c'est la seule commande qui compare les deux côtés, et c'est son absence
       # qui avait laissé passer le décalage du lot M1.
       - name: Vérifier l'alignement
         env:
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: supabase migration list --linked
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: supabase migration list --db-url "$DB_URL"
