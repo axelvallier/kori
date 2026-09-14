@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 
 import type { Contexte } from "./contexte";
+import { enregistrerOutilsLexique } from "./_outils/lexique";
 import { enregistrerOutilsListe } from "./_outils/liste";
 import { enregistrerPing } from "./_outils/ping";
 
@@ -22,4 +23,5 @@ import { enregistrerPing } from "./_outils/ping";
 export function enregistrerOutils(server: McpServer, ctx: Contexte) {
   enregistrerPing(server, ctx);
   enregistrerOutilsListe(server, ctx);
+  enregistrerOutilsLexique(server, ctx);
 }
