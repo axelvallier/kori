@@ -186,6 +186,23 @@ faire défiler. Tenir aussi ce cas demanderait des lignes d'environ 44 points,
 donc un finnois autour de 18, ce qui coûte le critère « lisible à bout de bras ».
 Arbitrage rendu en faveur de la lisibilité. À rejuger après quelques courses.
 
+**L'envoi des emails passe par le service partagé de Supabase**, plafonné à
+quelques emails par heure. La limite a été atteinte dès la première séance de
+tests réels, le 14 septembre 2026 — trois connexions ont suffi.
+
+Ce n'est pas gênant tant que le porteur est seul : une session dure des mois, on
+ne se reconnecte presque jamais. Ça le devient à deux conditions, et il suffit
+d'une : **quelqu'un d'autre s'inscrit**, ou **un nom de domaine est pris**. La
+réponse est un SMTP dédié — Resend, gratuit jusqu'à trois mille emails par mois
+— renseigné dans Authentication → SMTP Settings. Le seul vrai travail est
+l'authentification du domaine, qui suppose d'en avoir un.
+
+Deuxième effet, invisible jusqu'au jour où il mord : les liens partent d'une
+adresse Supabase partagée, ce qui les envoie plus volontiers en indésirables.
+
+Décision remise volontairement, pas oubliée. Pas de ticket tant que la condition
+de déclenchement n'est pas remplie.
+
 **Le rayon de `tofu`, `seitan` et `härkis`.** Inchangée depuis M0.
 
 **Corriger une traduction fausse.** Inchangée depuis M0, et le ticket 14 approche.
@@ -206,14 +223,19 @@ lot M1 le concernent directement :
 
 ## En attente côté humain
 
-* **Réglage Supabase du projet hébergé**, sans lequel le dernier critère du
-  ticket 05 ne peut pas être vérifié. Authentication → URL Configuration :
-  Site URL `https://kori-6p7o.vercel.app`, Redirect URLs
-  `http://localhost:3000/**` et `https://kori-6p7o-*.vercel.app/**`. Le local
-  porte déjà l'équivalent dans `supabase/config.toml`.
-* **Vérifier la WebAPK sur un vrai téléphone.** Chrome sans interface dit que
-  rien ne s'oppose à l'installation ; la présence de l'entrée dans le tiroir et
-  dans les paramètres système se constate sur l'appareil.
+* ~~Réglage Supabase du projet hébergé~~ — **fait le 14 septembre 2026.**
+  Authentication → URL Configuration, avec `https://kori-6p7o-*.vercel.app/**`
+  en motif de préversion. Vérifié en demandant un lien depuis une préversion :
+  le retour se fait bien sur cette préversion. Le test compte parce que
+  l'échec, lui, ne fait aucun bruit — GoTrue ne renvoie pas d'erreur sur une
+  adresse de retour refusée, il retombe silencieusement sur le Site URL, et le
+  seul signe observable est le domaine d'atterrissage.
+* ~~Vérifier la WebAPK sur un vrai téléphone~~ — **fait le 14 septembre 2026.**
+  Installée depuis Chrome sur Android, Kori figure dans Paramètres →
+  Applications avec sa propre fiche. Un raccourci n'y apparaît jamais : c'est
+  cette distinction que le ticket 19 demandait de constater.
+
+**Les vingt-six critères d'acceptation du lot sont donc vérifiés.**
 * **Le sous-agent `revue-securite`** a tourné sur les deux migrations du lot, et
   y a trouvé deux vraies prises (voir plus haut). Il reste à le lancer sur la
   route du connecteur au lot M2, où il compte double : la clé secrète y
