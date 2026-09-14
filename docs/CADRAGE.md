@@ -157,10 +157,24 @@ ajoute la conséquence qui manquait — le finnois d'un terme est **recopié tel
 quel dans ce que Claude lit** quand il ajoute un produit à une liste.
 
 Un compte peut donc déposer une traduction dont le texte est mis en forme comme
-une consigne, en espérant qu'un autre compte demande ce produit-là. Aucune
-donnée ne fuit, et l'effet dépend entièrement de ce que le modèle fait d'un
-texte qui n'est pas une instruction — mais le vecteur existe, et il a été
-trouvé par la relecture de sécurité du lot M2, pas par l'usage.
+une consigne. Aucune donnée ne fuit, et l'effet dépend entièrement de ce que le
+modèle fait d'un texte qui n'est pas une instruction — mais le vecteur existe,
+et il a été trouvé par la relecture de sécurité du lot M2, pas par l'usage.
+
+**Et il ne demande plus que la victime coopère.** Le rattachement rétroactif du
+ticket 14 pousse une entrée du lexique vers les lignes **déjà présentes** dans
+les listes des autres comptes. Il suffisait avant d'espérer qu'un autre compte
+demande ce produit-là ; désormais, une entrée déposée rattrape ce qui existe
+déjà. C'est la même mécanique qui répare les listes de tout le monde quand la
+traduction est juste — on ne peut pas garder l'une sans l'autre.
+
+Le levier qui reste ouvert, et il n'appartient pas à cette décision : la
+politique d'insertion de `terms` ne vérifie pas que `fr_normalized` vaut bien
+`normalize(fr)`. Quelqu'un peut donc réserver la forme normalisée d'un terme
+courant en y associant n'importe quoi, et `terms` n'ayant ni update ni delete,
+la réparation demande une migration. **C'est le ticket 18 qui ferme ce trou**,
+et le rattachement rétroactif fait passer sa priorité de « ménage » à
+« prérequis ».
 
 Ce qui a été fait : une contrainte en base borne la **forme** des entrées —
 80 caractères, une seule ligne, pour le français comme pour le finnois. La

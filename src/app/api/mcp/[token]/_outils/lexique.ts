@@ -40,12 +40,27 @@ const RAYONS = [
 ] as const;
 
 /**
- * Plafond du balayage rétroactif. Le rattachement compare `normalize(raw_fr)`
- * en TypeScript, donc il faut ramener les lignes pour les comparer : il n'y a
- * pas encore d'équivalent SQL de `normalize()`, c'est précisément ce que le
- * ticket 18 doit poser. Tant qu'il n'existe pas, on borne.
+ * Plafond du balayage rétroactif chez **les autres comptes**. Le rattachement
+ * compare `normalize(raw_fr)` en TypeScript, donc il faut ramener les lignes
+ * pour les comparer : il n'y a pas encore d'équivalent SQL de `normalize()`,
+ * c'est précisément ce que le ticket 18 doit poser. Tant qu'il n'existe pas, on
+ * borne — mais on ne borne que ce qui est de toute façon « au mieux ».
+ *
+ * **Ce n'est pas ce nombre qui tranche.** PostgREST applique son propre plafond,
+ * `max_rows = 1000` dans `supabase/config.toml`, et il gagne toujours : demander
+ * 2000 lignes en rend 1000, sans erreur et sans rien dire. Une troncature ne se
+ * détecte donc pas en comparant le nombre de lignes reçues à cette constante —
+ * c'est le comptage exact qui le dit, et lui seul.
  */
-const PLAFOND_RATTRAPAGE = 2000;
+const PLAFOND_AUTRES = 1000;
+
+/**
+ * Taille des lots d'écriture. PostgREST passe `id=in.(…)` dans la chaîne de
+ * requête : quelques centaines d'identifiants suffisent à dépasser la longueur
+ * d'URL admise, et l'écriture échoue en bloc. Cent est la même borne que les
+ * outils à identifiants de `liste.ts`.
+ */
+const TAILLE_LOT = 100;
 
 /**
  * Une chaîne destinée au lexique : une seule ligne, longueur bornée.
@@ -219,28 +234,45 @@ export function enregistrerOutilsLexique(server: McpServer, ctx: Contexte) {
 
       if (!terme) return echouer("L'écriture dans le lexique n'est pas passée.");
 
-      const rattachees = await rattacher(ctx, forme, terme.id);
+      const { propres, ok } = await rattacher(ctx, forme, terme.id);
 
       const entete = nouveau
         ? `Ajouté au lexique : ${terme.fr} → ${terme.fi} (rayon ${terme.aisle}).`
         : `Le lexique a déjà « ${terme.fr} » → ${terme.fi} (rayon ${terme.aisle}). ` +
           "Rien n'a été écrasé : une entrée du lexique ne se réécrit pas.";
 
-      const suite =
-        rattachees === 0
+      // Trois cas et non deux : un rattachement qui a échoué ne se raconte pas
+      // comme une liste qui n'attendait rien. Le terme est dans le lexique, la
+      // ligne est toujours en français, et personne ne relancerait l'opération
+      // si on disait la même chose dans les deux cas.
+      const suite = !ok
+        ? "Le lexique est à jour, mais le rattachement des lignes existantes n'est " +
+          "pas passé : redemande l'ajout du produit pour que la ligne retrouve son finnois."
+        : propres === 0
           ? "Aucune ligne de la liste ne l'attendait."
-          : `${rattachees} ligne(s) de la liste affichent maintenant le finnois.`;
+          : `${propres} ligne(s) de la liste affichent maintenant le finnois.`;
 
       return repondre(`${entete} ${suite}`, {
         cree: nouveau,
         fr: terme.fr,
         fi: terme.fi,
         aisle: terme.aisle,
-        rattachees,
+        rattachees: propres,
       });
     },
   );
 }
+
+/**
+ * Ce que le rattachement a fait, du point de vue de l'appelant.
+ *
+ * `ok` existe parce que « zéro ligne rattachée » et « le rattachement a
+ * échoué » ne doivent pas se raconter pareil : dans le second cas, la ligne de
+ * l'utilisateur est toujours en français, le terme est désormais dans le
+ * lexique, et personne ne relancera l'opération. Un échec silencieux ici est un
+ * bug qu'on ne découvre qu'en rayon.
+ */
+type Rattachement = { propres: number; ok: boolean };
 
 /**
  * Rattache rétroactivement les lignes qui attendaient ce terme, **tous comptes
@@ -250,59 +282,121 @@ export function enregistrerOutilsLexique(server: McpServer, ctx: Contexte) {
  * La comparaison se fait en TypeScript, sur `normalize()`, parce que c'est la
  * seule règle du projet et qu'elle n'a pas encore d'équivalent SQL — le ticket
  * 18 doit l'écrire. D'ici là on ramène les lignes non traduites et on compare
- * ici, sous plafond.
+ * ici.
  *
- * **Le nombre rendu ne compte que les lignes du compte appelant.** Le total, y
- * compris les lignes des autres, part dans les journaux du serveur : dire à
- * Claude « 3 lignes rattachées ailleurs » lui apprendrait que d'autres comptes
- * ont ce produit dans leur liste, ce qui ne le regarde pas.
+ * **En deux passes, et l'ordre n'est pas cosmétique.** La liste de l'appelant
+ * est traitée d'abord, seule, sans plafond partagé : c'est la seule dont le
+ * résultat lui est rendu, et c'est celle qu'il va regarder dans la seconde qui
+ * suit. Une passe unique plafonnée mettrait sa ligne en concurrence avec toutes
+ * les lignes non traduites de tous les comptes — et n'importe qui pourrait, en
+ * remplissant sa propre liste, faire tomber celle des autres hors de la fenêtre
+ * et désactiver l'auto-réparation pour tout le monde. La passe sur les autres
+ * comptes reste « au mieux », plafonnée, et ses échecs ne regardent que les
+ * journaux.
+ *
+ * **Le nombre rendu ne compte que les lignes du compte appelant.** Le total
+ * part dans les journaux du serveur : dire à Claude « 3 lignes rattachées
+ * ailleurs » lui apprendrait que d'autres comptes ont ce produit dans leur
+ * liste, ce qui ne le regarde pas.
  */
-async function rattacher(ctx: Contexte, forme: string, termeId: string): Promise<number> {
-  const { data, error } = await ctx.supabase
+async function rattacher(
+  ctx: Contexte,
+  forme: string,
+  termeId: string,
+): Promise<Rattachement> {
+  const propres = await rattacherLot(ctx, termeId, forme, true);
+
+  // Les autres comptes, au mieux. Une erreur ici n'est pas remontée à
+  // l'appelant : ce n'est pas sa liste, et il ne peut rien y faire.
+  const autres = await rattacherLot(ctx, termeId, forme, false);
+
+  if (autres.touchees > 0) {
+    console.info(
+      `mcp rattacher : ${autres.touchees} ligne(s) rattachée(s) chez d'autres comptes`,
+    );
+  }
+
+  return { propres: propres.touchees, ok: propres.ok };
+}
+
+/**
+ * Une passe de rattachement, sur la liste de l'appelant (`propre`) ou sur
+ * toutes les autres. Rendue séparée pour que les deux passes ne puissent pas
+ * diverger : même lecture, même comparaison, même écriture par lots.
+ */
+async function rattacherLot(
+  ctx: Contexte,
+  termeId: string,
+  forme: string,
+  propre: boolean,
+): Promise<{ touchees: number; ok: boolean }> {
+  // Sans liste rattachée au compte — l'anomalie de provisionnement — il n'y a
+  // pas de « chez soi » à traiter, et « les autres » sont tout le monde.
+  if (propre && ctx.listId === null) return { touchees: 0, ok: true };
+
+  // `count: "exact"` : le nombre total de lignes qui correspondent, à comparer
+  // au nombre de lignes reçues. C'est la seule façon de voir une troncature,
+  // le plafond réel étant celui du serveur et non celui qu'on demande.
+  const base = ctx.supabase
     .from("list_items")
-    .select("id, list_id, raw_fr")
-    .is("term_id", null)
-    .limit(PLAFOND_RATTRAPAGE)
-    .returns<{ id: string; list_id: string; raw_fr: string }[]>();
+    .select("id, raw_fr", { count: "exact" })
+    .is("term_id", null);
+
+  const borne =
+    ctx.listId === null
+      ? base
+      : propre
+        ? base.eq("list_id", ctx.listId)
+        : base.neq("list_id", ctx.listId);
+
+  const { data, count, error } = await borne
+    .limit(PLAFOND_AUTRES)
+    .returns<{ id: string; raw_fr: string }[]>();
 
   if (error) {
     console.error("mcp rattacher lecture", error.code, error.message);
-    return 0;
+    return { touchees: 0, ok: false };
   }
 
   const lignes = data ?? [];
-  if (lignes.length === PLAFOND_RATTRAPAGE) {
-    console.warn("mcp rattacher : plafond atteint, rattrapage possiblement partiel");
+
+  // Une troncature sur la liste de l'appelant serait un vrai problème — sa
+  // ligne peut être celle qui manque. Elle ne devrait jamais arriver : une
+  // liste de courses n'a pas mille lignes non traduites. Si ça arrive, on le
+  // dit, et `ok` passe à faux pour que la réponse ne mente pas.
+  const tronquee = (count ?? lignes.length) > lignes.length;
+  if (tronquee) {
+    console.warn(
+      `mcp rattacher : ${count} ligne(s) à examiner, ${lignes.length} reçue(s) — rattrapage partiel`,
+    );
+    if (propre) return { touchees: 0, ok: false };
   }
 
-  const aRattacher = lignes.filter((ligne) => normalize(ligne.raw_fr) === forme);
-  if (aRattacher.length === 0) return 0;
+  const ids = lignes.filter((ligne) => normalize(ligne.raw_fr) === forme).map((l) => l.id);
+  if (ids.length === 0) return { touchees: 0, ok: true };
 
-  const { data: touchees, error: erreurMaj } = await ctx.supabase
-    .from("list_items")
-    .update({ term_id: termeId })
-    .in(
-      "id",
-      aRattacher.map((ligne) => ligne.id),
-    )
-    // Toujours vrai au moment du filtrage, pas forcément à l'écriture : une
-    // ligne peut avoir été rattachée entre-temps par un appel concurrent, et
-    // on ne la lui reprend pas.
-    .is("term_id", null)
-    .select("id, list_id")
-    .returns<{ id: string; list_id: string }[]>();
+  let touchees = 0;
+  for (let debut = 0; debut < ids.length; debut += TAILLE_LOT) {
+    const lot = ids.slice(debut, debut + TAILLE_LOT);
 
-  if (erreurMaj) {
-    console.error("mcp rattacher écriture", erreurMaj.code, erreurMaj.message);
-    return 0;
+    const { data: faites, error: erreurMaj } = await ctx.supabase
+      .from("list_items")
+      .update({ term_id: termeId })
+      .in("id", lot)
+      // Vrai au moment du filtrage, pas forcément à l'écriture : une ligne peut
+      // avoir été rattachée entre-temps par un appel concurrent, et on ne la
+      // lui reprend pas.
+      .is("term_id", null)
+      .select("id")
+      .returns<{ id: string }[]>();
+
+    if (erreurMaj) {
+      console.error("mcp rattacher écriture", erreurMaj.code, erreurMaj.message);
+      return { touchees, ok: false };
+    }
+
+    touchees += faites?.length ?? 0;
   }
 
-  const total = touchees?.length ?? 0;
-  const propres = (touchees ?? []).filter((l) => l.list_id === ctx.listId).length;
-
-  if (total !== propres) {
-    console.info(`mcp rattacher : ${total} ligne(s) rattachée(s), dont ${propres} au compte appelant`);
-  }
-
-  return propres;
+  return { touchees, ok: true };
 }
