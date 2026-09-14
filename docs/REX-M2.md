@@ -99,6 +99,32 @@ tomates », introuvable.
 **Une description d'outil n'est pas une validation.** Elle oriente, elle ne
 contraint pas, et le code doit rester juste quand elle n'est pas suivie.
 
+### Le lexique des rayons n'est pas celui des recettes
+
+Trouvé **après la fusion**, à la première vraie utilisation : le connecteur
+branché dans Claude, une recette trouvée en ligne, et une liste dont la moitié
+des lignes sont illisibles en rayon — « cuillères à soupe concentr… »,
+« cuillère à café sucre roux », toutes en traduction manquante.
+
+`parseEntry` connaissait le vocabulaire des **rayons** — paquet, boîte, gousse,
+kg. Une recette ne parle pas comme ça : elle ne dit pas « 15 g de persil », elle
+dit « 1 cuillère à soupe de persil plat ». Le mot n'étant pas reconnu, tout ce
+qui suivait le nombre devenait le produit, avec deux dégâts d'un coup : la ligne
+illisible, et sa forme normalisée introuvable au lexique — donc « traduction
+manquante » sur `persil`, qui **y est**.
+
+Le détail qui explique l'oubli est une règle de grammaire : **le pluriel d'une
+locution se marque au premier mot.** « cuillères à soupe », pas « cuillère à
+soupes ». La liste des contenants fabriquait ses pluriels en ajoutant un `s` à
+la fin — juste pour `paquet`, faux pour toute locution, et faux aussi pour
+`bocal`, qui donnait « bocals » depuis M1 sans que personne ne le voie.
+
+Ce que le cas enseigne au-delà du correctif : **les listes de mots d'un projet
+héritent du contexte où elles ont été écrites.** Celles-ci ont été écrites en
+pensant à quelqu'un debout dans un magasin, au lot M1, avant qu'il existe une
+machine capable de remplir la liste à partir d'un texte de recette. Le lot M2 a
+changé la source des données sans que personne ne relise les listes.
+
 ### Le plafond global mettait la liste de l'appelant en concurrence
 
 Trouvé par le sous-agent `revue-securite`, et c'est sa plus belle prise du lot.
@@ -190,15 +216,26 @@ Une addition utile : fabriquer les cookies de session en passant la session à
 bibliothèque écrit alors elle-même les bons noms et le bon découpage, au lieu de
 les deviner.
 
-## Questions laissées ouvertes
+### Le connecteur, branché pour de vrai
 
-**Le connecteur n'a jamais été branché dans Claude.** Le dernier critère
-d'acceptation du ticket 12, et le seul du lot qui ne soit pas vérifié. Tout est
-prouvé jusqu'au protocole — l'inspecteur liste et exécute, deux comptes sont
-isolés, la révocation coupe — mais l'ajout réel dans les réglages de Claude
-suppose l'application déployée et un humain. **À faire juste après la fusion**,
-et avec le réflexe du lot M1 en tête : la migration part par le workflow, le
-code par Vercel, et les deux n'arrivent pas ensemble.
+**Fait le 14 septembre 2026**, après la fusion du lot : jeton généré depuis
+`/settings` sur l'application déployée, adresse collée en connecteur
+personnalisé dans Claude, connexion établie. Claude est même allé chercher une
+recette derrière un lien et a rempli la liste tout seul — ce que le cadrage
+décrit comme le critère de réussite du projet.
+
+C'est ce qui ferme le dernier critère d'acceptation du ticket 12 — et c'est la
+même séance qui a révélé le défaut des mesures de recette, plus haut. **Les
+quinze critères d'acceptation du lot sont donc vérifiés**, et le seul qui ait
+tenu jusqu'au bout est celui qu'aucun test ne pouvait atteindre.
+
+Un bémol sur le dernier du ticket 15, « quelqu'un qui n'a pas écrit le code
+branche le connecteur en moins de cinq minutes » : le porteur n'a pas écrit le
+code, mais il a dirigé tout ce qui l'a produit. Ce n'est donc pas la paire
+d'yeux neufs que le critère visait, et il reste à confirmer le jour où
+quelqu'un d'autre essaiera.
+
+## Questions laissées ouvertes
 
 **Aucune limitation de débit sur la route.** Chaque jeton invalide coûte un
 aller-retour Postgres, sans plafond, sur une URL publique. Ce n'est pas un
@@ -243,8 +280,8 @@ logique de regroupement par forme normalisée est déjà écrite dans
 
 ## En attente côté humain
 
-* **Brancher le connecteur dans Claude**, sur l'application déployée, et le dire
-  ici. C'est le dernier critère d'acceptation ouvert du lot.
+* ~~Brancher le connecteur dans Claude~~ — **fait le 14 septembre 2026**, voir
+  plus haut. C'était le dernier critère d'acceptation ouvert du lot.
 * **Vérifier la migration après fusion**, pas seulement la liste des migrations :
   `terms_fr_forme`, `terms_fi_forme` et `terms_fr_normalized_forme` doivent
   exister sur la base hébergée, et une insertion sur plusieurs lignes doit y être

@@ -11,7 +11,7 @@
  * conditionnement réel, que personne ne saisira.
  */
 
-/** Unités de mesure, collées ou non au nombre. */
+/** Unités de mesure en abrégé, collées ou non au nombre. Invariables. */
 const UNITES = [
   "kg", "g", "mg",
   "l", "dl", "cl", "ml",
@@ -19,18 +19,68 @@ const UNITES = [
 ];
 
 /**
- * Contenants et portions. Ils font partie de la quantité, pas du produit :
- * « 1 paquet de pâtes » s'achète au paquet, mais le terme à traduire est
- * « pâtes ». Au pluriel aussi, « 2 paquets de pâtes ».
+ * Contenants, portions et mesures dont le pluriel est un « s » final.
+ *
+ * Ils font partie de la quantité, pas du produit : « 1 paquet de pâtes »
+ * s'achète au paquet, mais le terme à traduire est « pâtes ». Au pluriel aussi,
+ * « 2 paquets de pâtes ».
  */
 const CONTENANTS = [
   "paquet", "boîte", "boite", "bouteille", "brique", "pot", "sachet", "barquette",
   "botte", "gousse", "tranche", "pack", "filet", "bocal", "canette", "part",
+  // Le vocabulaire des recettes, découvert à l'usage : une recette ne dit pas
+  // « 15 g de persil », elle dit « 1 cuillère à soupe de persil plat ».
+  "pincée", "brin", "feuille", "branche", "tige", "poignée", "verre",
+  "litre", "centilitre", "millilitre", "décilitre", "gramme", "kilogramme", "kilo",
+];
+
+/**
+ * Les mesures dont le pluriel ne s'obtient **pas** en ajoutant un « s » à la
+ * fin, et qui doivent donc être écrites en toutes lettres, forme par forme.
+ *
+ * C'est le cas de toutes les locutions : le pluriel de « cuillère à soupe » est
+ * « cuillères à soupe », la marque est au premier mot et non au dernier. La
+ * règle générique aurait produit « cuillère à soupes », qui n'existe pas — et
+ * c'est exactement ce qui a fait échouer une recette réelle : le mot n'étant
+ * pas reconnu, « 2 cuillères à soupe de concentré de tomate » donnait le
+ * produit « cuillères à soupe de concentré de tomate », illisible en rayon et
+ * introuvable dans le lexique.
+ */
+const MESURES = [
+  "cuillère à soupe", "cuillères à soupe",
+  "cuillère à café", "cuillères à café",
+  "cuillerée à soupe", "cuillerées à soupe",
+  "cuillerée à café", "cuillerées à café",
+  "c. à soupe", "c. à café", "c. à s.", "c. à c.",
+  // Pluriels irréguliers.
+  "morceau", "morceaux",
+  "bocaux",
 ];
 
 const NOMBRE = "\\d+(?:[.,]\\d+)?(?:\\s*/\\s*\\d+)?";
-const MOTS = [...UNITES, ...CONTENANTS, ...CONTENANTS.map((c) => `${c}s`)]
+
+/**
+ * Les mots sont échappés avant d'entrer dans le motif. Sans ça, le point de
+ * « c. à s. » vaudrait « n'importe quel caractère », et « ca as x » serait lu
+ * comme une unité de mesure.
+ */
+function echapper(mot: string): string {
+  return mot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * L'ordre est décroissant en longueur, et ce n'est pas cosmétique : une
+ * alternance de regex prend la première qui matche, donc « c. à c. » placé
+ * avant « c. à café » couperait au mauvais endroit.
+ */
+const MOTS = [
+  ...UNITES,
+  ...CONTENANTS,
+  ...CONTENANTS.map((c) => `${c}s`),
+  ...MESURES,
+]
   .sort((a, b) => b.length - a.length)
+  .map(echapper)
   .join("|");
 
 /**

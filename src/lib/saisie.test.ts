@@ -35,6 +35,29 @@ describe("parseEntry", () => {
     ["1 bouteille de vin rouge", "1 bouteille", "vin rouge", "contenant et produit en deux mots"],
     ["10 tranches de jambon", "10 tranches", "jambon", "portion au pluriel"],
     ["4 gousses d'ail", "4 gousses", "ail", "contenant au pluriel et élision"],
+
+    // Le vocabulaire des recettes. Les six premiers viennent d'une liste
+    // réelle, remplie par le connecteur à partir d'une recette trouvée en
+    // ligne : sans ces mots, le produit devenait « cuillères à soupe de
+    // concentré de tomate », illisible en rayon et introuvable au lexique.
+    [
+      "2 cuillères à soupe de concentré de tomate",
+      "2 cuillères à soupe",
+      "concentré de tomate",
+      "piège : le pluriel est au premier mot de la locution, pas au dernier",
+    ],
+    ["1 cuillère à soupe de persil plat", "1 cuillère à soupe", "persil plat", "la locution au singulier"],
+    ["1/2 cuillère à café de sucre roux", "1/2 cuillère à café", "sucre roux", "fraction et locution ensemble"],
+    ["1 pincée de sel", "1 pincée", "sel", "une mesure sans instrument"],
+    ["2 cuillères à soupe d'huile d'olive", "2 cuillères à soupe", "huile d'olive", "locution, élision, et produit qui en contient une autre"],
+    ["1 cuillère à soupe d'épices cajun", "1 cuillère à soupe", "épices cajun", "locution et élision"],
+    ["200 grammes de farine", "200 grammes", "farine", "l'unité écrite en toutes lettres"],
+    ["2 c. à s. de vinaigre", "2 c. à s.", "vinaigre", "piège : les points sont échappés, sinon ils matcheraient n'importe quoi"],
+    ["3 brins de thym", "3 brins", "thym", "une mesure d'herbe fraîche"],
+    ["1 morceau de gingembre", "1 morceau", "gingembre", "pluriel irrégulier au singulier"],
+    ["2 morceaux de sucre", "2 morceaux", "sucre", "piège : le pluriel est en x"],
+    ["1 verre de lait", "1 verre", "lait", "un contenant du quotidien"],
+    ["2 cuillères à soupe", "", "2 cuillères à soupe", "une mesure sans produit reste la ligne entière"],
   ];
 
   for (const [saisie, quantite, produit, pourquoi] of cas) {

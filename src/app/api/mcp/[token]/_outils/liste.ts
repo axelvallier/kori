@@ -185,6 +185,12 @@ export function enregistrerOutilsListe(server: McpServer, ctx: Contexte) {
         "La quantité est du texte libre, tel qu'on le lit devant le rayon : " +
         "« 500 g », « 2 », « 1 paquet ». Laisse-la vide si la recette n'en " +
         "donne pas.\n\n" +
+        "**L'unité et l'ustensile de mesure vont dans `quantity`, jamais dans " +
+        "`fr`** : « cuillère à soupe », « pincée », « gousse », « brin » " +
+        "mesurent le produit, ils ne sont pas le produit. Envoie " +
+        "`{ fr: \"persil plat\", quantity: \"1 cuillère à soupe\" }` et non " +
+        "`{ fr: \"cuillère à soupe de persil plat\" }` — la seconde forme " +
+        "donne une ligne qu'on ne peut ni lire ni traduire en rayon.\n\n" +
         "Un produit déjà présent dans la liste n'est jamais dupliqué : sa " +
         "quantité est mise à jour et la ligne redevient à acheter.",
       inputSchema: z.object({
