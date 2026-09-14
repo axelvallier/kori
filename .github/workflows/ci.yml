@@ -50,6 +50,13 @@ jobs:
       - name: Tests unitaires
         run: npm test
 
+      # Ici, le controleur ne touche a aucune base : il lit des fichiers. Son
+      # interet est de refuser une migration destructrice **avant** la fusion,
+      # pendant qu'on peut encore en discuter. Le workflow Migrations le rejoue
+      # apres la fusion, avant d'ouvrir la moindre connexion.
+      - name: Garde contre les migrations destructrices
+        run: npm run migrations:verifier
+
       # Valeurs syntaxiquement valides et volontairement fausses. `src/lib/env.ts`
       # valide les variables publiques au chargement du module : dès qu'une page
       # l'importera, un build sans ces variables échouerait. Aucune n'est un

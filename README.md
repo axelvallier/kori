@@ -110,20 +110,53 @@ SQL d'une base réelle.
 ## Migrations et base hébergée
 
 Vercel déploie le code sur push. **Il ne déploie pas le schéma.** Les deux
-partent donc en décalé, et rien ne le signale : l'application se déploie en vert
-sur une base qui n'a pas encore la table ou le déclencheur qu'elle attend.
+partaient donc en décalé, et rien ne le signalait : l'application se déployait
+en vert sur une base qui n'avait pas encore la table ou le déclencheur qu'elle
+attendait. Le récit est dans `docs/REX-M1.md`.
 
-Après toute fusion touchant `supabase/migrations/` :
+Depuis, le workflow `.github/workflows/migrations.yml` les applique à la fusion
+sur `main`. Il ne se déclenche jamais sur une pull request : le dépôt est
+public, une pull request exécute le code de son auteur, et un workflow qui
+détient le mot de passe de la base ne doit tourner que sur du code déjà accepté.
+
+Deux garde-fous, dans cet ordre :
+
+**Le contrôleur de migrations destructrices** refuse ce qui peut perdre des
+données — suppression de table ou de colonne, vidage, `delete` ou `update` sans
+condition — y compris à l'intérieur d'un corps de fonction. Il tourne d'abord
+sur les pull requests, pendant qu'on peut encore en discuter, puis à nouveau
+avant que le workflow n'ouvre la moindre connexion.
+
+```bash
+npm run migrations:verifier
+```
+
+Pour faire passer une suppression voulue, il faut la signer dans le fichier :
+
+```sql
+-- kori:destructif <pourquoi cette perte est voulue>
+```
+
+Ce n'est pas un contournement, c'est une signature : elle reste dans le fichier,
+et elle sera lue le jour où quelqu'un cherchera pourquoi ces données ont
+disparu. La désactivation de RLS, elle, n'a pas d'échappatoire — la règle 3 est
+sans exception.
+
+**Et rien n'est appliqué à moitié.** Postgres exécute chaque migration dans une
+transaction : une faute de syntaxe ou une contrainte violée annule tout le
+fichier et ne laisse aucune trace. Le danger n'est donc pas la migration cassée,
+c'est celle qui fonctionne parfaitement et fait la mauvaise chose — d'où le
+contrôleur.
+
+En local, ou pour reprendre la main :
 
 ```bash
 npx supabase db push --dry-run        # ce qui partirait
-npx supabase db push                  # l'appliquer
 npx supabase migration list --linked  # local et distant doivent coïncider
 ```
 
-Puis vérifier le comportement, pas seulement la liste : une migration appliquée
-ne prouve pas qu'un déclencheur se déclenche. Le récit de la fois où ça a été
-oublié est dans `docs/REX-M1.md`.
+Et vérifier le comportement, pas seulement la liste : une migration appliquée
+ne prouve pas qu'un déclencheur se déclenche.
 
 ## Hygiène des secrets
 
