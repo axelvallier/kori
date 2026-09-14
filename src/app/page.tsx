@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { seDeconnecter } from "@/app/auth/actions";
 import { Liste } from "@/app/liste";
 import { chargerListe } from "@/lib/liste";
@@ -16,14 +18,25 @@ export default async function Page({ searchParams }: PageProps<"/">) {
         <h1 className="truncate text-lg font-semibold tracking-tight">
           {liste?.name ?? "Kori"}
         </h1>
-        <form action={seDeconnecter}>
-          <button
-            type="submit"
-            className="-mr-2 flex min-h-12 min-w-12 items-center justify-center px-2 text-sm text-black/55 dark:text-white/55"
+        {/* Les réglages n'ont qu'un sujet, le connecteur, mais une page qu'on
+            ne peut pas atteindre n'existe pas. Le lien reste discret : on y va
+            une fois, à l'installation du connecteur, jamais en magasin. */}
+        <nav className="flex shrink-0 items-center">
+          <Link
+            href="/settings"
+            className="flex min-h-12 min-w-12 items-center justify-center px-2 text-sm text-black/55 dark:text-white/55"
           >
-            Quitter
-          </button>
-        </form>
+            Réglages
+          </Link>
+          <form action={seDeconnecter}>
+            <button
+              type="submit"
+              className="-mr-2 flex min-h-12 min-w-12 items-center justify-center px-2 text-sm text-black/55 dark:text-white/55"
+            >
+              Quitter
+            </button>
+          </form>
+        </nav>
       </header>
 
       {liste ? (
