@@ -64,18 +64,45 @@ export async function envoyerLienMagique(
   });
 
   if (error) {
-    // Le message de Supabase est repris tel quel dans un seul cas, celui du
-    // quota : « email rate limit exceeded » est une information utile, l'utilisateur
-    // doit savoir qu'il faut attendre plutôt que recommencer. Le reste est
-    // résumé, parce qu'un message d'erreur d'authentification détaillé raconte
-    // surtout si un compte existe.
-    const message =
-      error.status === 429
-        ? "Trop de demandes en peu de temps. Réessaie dans quelques minutes."
-        : "L'envoi a échoué. Réessaie dans un instant.";
     console.error("signInWithOtp", error.status, error.code, error.message);
-    return { statut: "erreur", message };
+    return { statut: "erreur", message: messageErreur(error) };
   }
 
   return { statut: "envoye", email };
+}
+
+/**
+ * Traduction d'une erreur Supabase en phrase utile.
+ *
+ * Le détail n'est jamais repris tel quel : un message d'erreur
+ * d'authentification raconte surtout si un compte existe. Seul le quota
+ * d'envoi mérite une explication, parce que sans elle l'utilisateur redemande
+ * un lien toutes les trente secondes et ne fait que s'enfoncer.
+ *
+ * Il y a deux quotas, et Supabase leur donne le **même** code
+ * `over_email_send_rate_limit` : le délai minimum entre deux envois à la même
+ * adresse, qui se compte en secondes, et le quota du service d'envoi intégré,
+ * qui se compte en poignée d'emails par heure. Seul le texte anglais les
+ * distingue, et lui seul porte le décompte.
+ *
+ * D'où la lecture du décompte, assumée comme une heuristique : si la
+ * formulation de Supabase change, la recherche échoue et on retombe sur le cas
+ * général. Le pire que ça produise est un message moins précis, jamais faux —
+ * contrairement au « réessaie dans quelques minutes » d'avant, qui promettait
+ * des minutes là où il fallait parfois attendre une heure.
+ */
+function messageErreur(error: { status?: number; message: string }): string {
+  if (error.status !== 429) {
+    return "L'envoi a échoué. Réessaie dans un instant.";
+  }
+
+  const secondes = /after (\d+) seconds?/i.exec(error.message)?.[1];
+  if (secondes) {
+    return `Encore ${secondes} secondes avant de pouvoir redemander un lien.`;
+  }
+
+  return (
+    "Trop de liens demandés. Si tu en as déjà reçu un sans l'utiliser, il est" +
+    " peut-être encore valide. Sinon, l'envoi est limité à quelques emails par heure."
+  );
 }
