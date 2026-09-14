@@ -27,6 +27,40 @@ que `REX-M0.md` décrit déjà, et il coûte quinze minutes par oubli.
 
 ## Les pièges, par ordre de coût
 
+### Déployé n'est pas migré
+
+Le piège le plus cher du lot, et il n'a été trouvé qu'à l'usage : **les deux
+migrations de M1 n'ont jamais été appliquées à la base hébergée.** Elles
+avaient été jouées en local, relues, fusionnées — et Vercel, qui déploie sur
+push, ne déploie que le code.
+
+Rien ne l'a signalé. La CI était verte, le déploiement réussi, l'application en
+ligne. Le seul symptôme est apparu sur le téléphone du porteur, après
+installation et connexion : « Aucune liste n'est rattachée à ce compte. » Le
+déclencheur du ticket 06 n'existait pas en production, donc aucun compte n'avait
+de liste — et le lexique gardait ses ligatures, donc « boeuf » n'y trouvait rien
+non plus.
+
+Ce qui rend le piège coûteux, c'est que **tout ce qui se vérifie sans la base
+hébergée passait**. Les tests SQL tournent en local. Les sabotages tournent en
+local. La revue de sécurité lit des fichiers. La seule vérification qui l'aurait
+attrapé est `npx supabase migration list --linked`, qui compare les deux côtés,
+et elle n'a été lancée qu'après coup.
+
+Corrigé, puis vérifié **en production** et pas seulement sur la liste des
+migrations : un compte de test créé par l'API d'administration a bien reçu son
+profil et sa liste « Ostoslista », et sa suppression a bien tout emporté. Le
+compte de test a été retiré.
+
+La règle est désormais dans `CLAUDE.md` : après toute fusion touchant
+`supabase/migrations/`, pousser vers la base hébergée et vérifier le
+comportement, pas seulement la liste.
+
+**Ce qu'il faudrait vraiment** : que la CI refuse de laisser diverger le local
+et le distant, ou applique les migrations elle-même à la fusion. Les deux
+demandent des secrets dans GitHub et une décision sur ce qu'on autorise à
+toucher la production automatiquement. Question ouverte, pas encore tranchée.
+
 ### Le lexique écrivait « œuf », personne ne tape « œuf »
 
 Le ticket 07 nomme trois pièges à garder verts : `ananas`, `riz`, `oeufs`. Les
