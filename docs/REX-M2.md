@@ -10,16 +10,32 @@ et ne borne pas un lexique partagé.
 
 | Ticket | Issue | PR | |
 |---|---|---|---|
-| 11 Générer et révoquer les jetons | #16 | #51 | à fusionner |
-| 12 Endpoint MCP distant | #17 | #52 | à fusionner |
-| 13 Outils de manipulation de la liste | #18 | #53 | à fusionner |
-| 14 Outils d'enrichissement du lexique | #19 | #54 | à fusionner |
-| 15 Documenter le branchement | #20 | #55 | à fusionner |
+| 11 Générer et révoquer les jetons | #16 | #51 | fusionné |
+| 12 Endpoint MCP distant | #17 | #58 | fusionné |
+| 13 Outils de manipulation de la liste | #18 | #53 | fusionné |
+| 14 Outils d'enrichissement du lexique | #19 | #54 | fusionné |
+| 15 Documenter le branchement | #20 | #55 | fusionné |
 
-**Les cinq pull requests sont empilées**, chacune basée sur la précédente, dans
-l'ordre du tableau. Même piège qu'au lot M1, même remède : en fusion écrasée,
-chaque fusion réécrit les SHA de sa base, et la suivante demande un
+Plus #60, la correction du vocabulaire des recettes, trouvée après coup à la
+première vraie utilisation — voir les pièges.
+
+**Les cinq pull requests étaient empilées**, chacune basée sur la précédente,
+dans l'ordre du tableau. Même piège qu'au lot M1, même remède : en fusion
+écrasée, chaque fusion réécrit les SHA de sa base, et la suivante demande un
 `git rebase --onto main <précédente> <suivante>`.
+
+Deux frictions que la pile a coûtées, et qui ne figuraient dans aucun retour
+d'expérience précédent :
+
+**`--delete-branch` ferme les pull requests enfants.** GitHub ferme
+automatiquement une pull request dont la branche de base disparaît, et la
+fermeture est **irréversible** : ni réouverture, ni changement de base. Le
+ticket 12 a dû repartir sous un nouveau numéro, #58. L'ordre correct est de
+**retarger l'enfant sur `main` avant** de fusionner et supprimer sa base.
+
+**« Ferme #17 » ne ferme rien.** GitHub ne reconnaît que `closes`, `fixes` et
+`resolves`, en anglais. Les cinq pull requests annonçaient la fermeture en
+français : aucune issue ne s'est fermée, et il a fallu les fermer à la main.
 
 Le connecteur expose neuf outils : `ping`, `get_list`, `add_items`,
 `check_items`, `uncheck_items`, `remove_items`, `clear_checked`,
@@ -282,10 +298,15 @@ logique de regroupement par forme normalisée est déjà écrite dans
 
 * ~~Brancher le connecteur dans Claude~~ — **fait le 14 septembre 2026**, voir
   plus haut. C'était le dernier critère d'acceptation ouvert du lot.
-* **Vérifier la migration après fusion**, pas seulement la liste des migrations :
-  `terms_fr_forme`, `terms_fi_forme` et `terms_fr_normalized_forme` doivent
-  exister sur la base hébergée, et une insertion sur plusieurs lignes doit y être
-  refusée. Elles sont posées en `not valid`, donc elles ne vérifient pas les
-  lignes existantes — un `validate constraint` à froid reste à faire un jour.
+* ~~Vérifier la migration après fusion~~ — **fait le 16 septembre 2026**, et par
+  le comportement, pas par la liste. Les trois contraintes existent sur la base
+  hébergée, toutes en `convalidated = false`, ce qui est le `not valid` attendu.
+  Une insertion d'un finnois sur deux lignes est refusée en `23514` sur
+  `terms_fi_forme` — donc rien n'est écrit, et la contrainte contraint.
+
+  Ce qui reste, sans urgence : les contraintes étant posées en `not valid`,
+  elles ne disent rien des 286 lignes déjà présentes. Un `validate constraint` à
+  froid le confirmerait un jour ; ces lignes viennent du seed et respectent déjà
+  la règle, donc la seule chose qu'il apporterait est une certitude écrite.
 * **Fermer les inscriptions**, toujours pas fait, et la condition de déclenchement
   n'a pas changé depuis M1.
