@@ -11,7 +11,10 @@ document qui sert de démonstration du projet.
 ## À faire
 
 * Section du README : générer un jeton, copier l'URL, ajouter le connecteur personnalisé dans les réglages de Claude
-* Captures d'écran des deux étapes
+* Capture d'écran de l'étape côté Kori. **Pas de capture côté Claude** : décidé
+  le 16 septembre 2026, l'interface d'un produit tiers change sans prévenir et
+  la capture serait périmée avant le texte qu'elle illustre. On illustre ce
+  qu'on maîtrise. Voir `docs/REX-M2.md`.
 * Trois prompts d'exemple : coller une recette, demander ce qui manque en traduction, vider les articles déjà achetés
 * Mention explicite que le jeton donne accès à la liste et ne doit pas être partagé
 

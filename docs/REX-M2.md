@@ -268,8 +268,21 @@ rattachement rétroactif le **propage désormais aux lignes déjà présentes** 
 les listes des autres comptes, au lieu de n'affecter que les ajouts futurs. Le
 ticket et son issue ont été mis à jour.
 
-**La capture d'écran côté Claude manque** dans le README. Elle suppose un compte
-Claude et son interface. À ajouter en branchant le connecteur pour de vrai.
+**La capture d'écran côté Claude n'existera pas, et c'est une décision.** Le
+ticket 15 en demandait deux ; il n'y en a qu'une, celle de l'écran de Kori.
+
+Tranché le 16 septembre 2026 par le porteur, avec l'argument qui l'emporte :
+**l'interface de Claude est susceptible de changer, donc la capture serait
+périmée avant la documentation qu'elle illustre** — et une documentation
+illustrée fausse est pire qu'une documentation qui décrit, parce qu'on croit
+l'image plutôt que le texte.
+
+La règle qui en découle, et qui vaut au-delà de ce cas : **on illustre ce qu'on
+maîtrise.** L'écran de Kori, oui — son apparence est dans ce dépôt, et une
+capture périmée se voit en relisant le code. L'écran d'un produit tiers, non :
+rien ici ne prévient quand il bouge. Le texte de l'étape 2 dit donc ce qu'il
+faut chercher — l'endroit où l'on ajoute un serveur MCP distant en collant son
+adresse — plutôt que les mots exacts d'un menu.
 
 **Les accents dans `normalize()`.** Inchangée depuis M0 et M1, et toujours plus
 chère à chaque terme ajouté. Le ticket 18 la porte aussi.

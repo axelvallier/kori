@@ -95,6 +95,13 @@ Dans Claude, **Réglages → Connecteurs → Ajouter un connecteur personnalisé
 Coller l'adresse copiée à l'étape précédente, telle quelle, jeton compris. Le
 connecteur ne demande ni identifiant ni autorisation : l'adresse suffit.
 
+Les mots exacts de ces écrans changent d'une version de Claude à l'autre, et
+d'une plateforme à l'autre. Ce qu'il faut chercher ne change pas : l'endroit où
+l'on **ajoute un serveur MCP distant en collant son adresse**. Il n'y a
+volontairement pas de capture d'écran ici — elle daterait plus vite que le
+texte, et une documentation illustrée fausse est pire qu'une documentation qui
+décrit.
+
 Une fois ajouté, il expose neuf outils — et le plus simple pour vérifier que
 tout tient est de demander à Claude d'appeler `ping`, qui répond le nom de ta
 liste et son nombre de lignes.
