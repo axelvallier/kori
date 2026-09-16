@@ -20,7 +20,17 @@ on:
       - "supabase/migrations/**"
       - ".github/workflows/migrations.yml"
   # Permet de rejouer à la main depuis l'onglet Actions, par exemple après avoir
-  # corrigé une migration refusée.
+  # corrigé une migration refusée, ou pour valider une mise à jour de ce fichier
+  # sans attendre la prochaine migration.
+  #
+  # ATTENTION : si on le lance sur une branche, la rebaser d'abord sur `main`.
+  # Ce workflow ne fait pas qu'installer une CLI, il **compare** les migrations
+  # locales à celles de la base. Une branche en retard d'une migration fait
+  # échouer `db push` sur « Remote migration versions not found in local
+  # migrations directory » — et la CLI suggère alors un `migration repair
+  # --status reverted` qu'il ne faut surtout pas suivre : la migration en
+  # question est appliquée, la marquer annulée ferait mentir l'historique.
+  # Arrivé une fois, le 16 septembre 2026. Voir docs/REX-M2.md.
   workflow_dispatch:
 
 permissions:
