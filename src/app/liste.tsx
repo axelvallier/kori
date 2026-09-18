@@ -1,9 +1,10 @@
 "use client";
 
-import { startTransition, useEffect, useOptimistic, useRef, useState } from "react";
+import { type ReactNode, startTransition, useEffect, useOptimistic, useRef, useState } from "react";
 
 import { ajouterItem, basculerCoche, supprimerItem, viderCoches } from "./actions";
 import type { Ligne } from "@/lib/liste";
+import { grouperParRayon } from "@/lib/rayons";
 import { avecReprise } from "@/lib/reprise";
 import { parseEntry } from "@/lib/saisie";
 
@@ -165,12 +166,12 @@ export function Liste({
     });
   }
 
-  // Les cochées descendent. Le tri de JavaScript est stable, donc l'ordre
-  // d'ajout est conservé à l'intérieur de chaque groupe.
-  const ordonnees = [...affichees].sort(
-    (a, b) => Number(a.checked) - Number(b.checked),
-  );
-  const nbCochees = affichees.filter((l) => l.checked).length;
+  // Rangée pour le parcours du magasin (ticket 17) : une section par rayon,
+  // dans l'ordre de RAYONS, et les cochées à part, tout en bas. Une ligne
+  // provisoire n'a pas encore de terme, donc pas de rayon : elle apparaît dans
+  // « autre » le temps de l'aller-retour, puis rejoint son rayon.
+  const { sections, cochees } = grouperParRayon(affichees);
+  const nbCochees = cochees.length;
 
   return (
     <>
@@ -204,22 +205,39 @@ export function Liste({
         </p>
       )}
 
-      {ordonnees.length === 0 ? (
+      {affichees.length === 0 ? (
         <p className="mt-8 text-balance text-sm text-black/55 dark:text-white/55">
           Ta liste est vide. Écris « tomates » ou « du lait » : le finnois
           s&apos;affiche à côté, c&apos;est lui que tu liras en rayon.
         </p>
       ) : (
-        <ul className="mt-4">
-          {ordonnees.map((ligne) => (
-            <LigneItem
-              key={ligne.id}
-              ligne={ligne}
-              onBasculer={() => basculer(ligne)}
-              onSupprimer={() => supprimer(ligne)}
-            />
+        <div className="mt-2">
+          {sections.map(({ rayon, lignes: groupe }) => (
+            <SectionRayon key={rayon.code} fi={rayon.fi} fr={rayon.fr}>
+              {groupe.map((ligne) => (
+                <LigneItem
+                  key={ligne.id}
+                  ligne={ligne}
+                  onBasculer={() => basculer(ligne)}
+                  onSupprimer={() => supprimer(ligne)}
+                />
+              ))}
+            </SectionRayon>
           ))}
-        </ul>
+
+          {cochees.length > 0 && (
+            <SectionRayon fi="Korissa" fr="Dans le caddie">
+              {cochees.map((ligne) => (
+                <LigneItem
+                  key={ligne.id}
+                  ligne={ligne}
+                  onBasculer={() => basculer(ligne)}
+                  onSupprimer={() => supprimer(ligne)}
+                />
+              ))}
+            </SectionRayon>
+          )}
+        </div>
       )}
 
       {nbCochees > 0 && (
@@ -238,6 +256,36 @@ export function Liste({
         </button>
       )}
     </>
+  );
+}
+
+/**
+ * Une section de la liste : l'en-tête du rayon, puis ses lignes.
+ *
+ * L'en-tête reprend la hiérarchie des lignes, finnois d'abord, français en
+ * dessous (D4) — c'est le mot du panneau qu'on cherche des yeux — mais plus
+ * petit et en capitales espacées, pour qu'on ne le confonde pas avec un
+ * article. Un `h2` pour que la structure existe aussi pour un lecteur d'écran.
+ */
+function SectionRayon({
+  fi,
+  fr,
+  children,
+}: {
+  fi: string;
+  fr: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="mt-3">
+      <h2 className="flex items-baseline gap-2 border-b border-black/10 pb-1 dark:border-white/15">
+        <span className="truncate text-[0.8rem] font-semibold uppercase tracking-wider">
+          {fi}
+        </span>
+        <span className="truncate text-[0.7rem] text-black/45 dark:text-white/45">{fr}</span>
+      </h2>
+      <ul>{children}</ul>
+    </section>
   );
 }
 
