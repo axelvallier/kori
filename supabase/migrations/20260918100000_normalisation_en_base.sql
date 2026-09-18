@@ -103,6 +103,15 @@ comment on function public.normalize_fr(text) is
   'Forme canonique d''un terme français. Jumelle de normalize() dans '
   'src/lib/terms.ts : toute divergence est un bug. Calcule terms.fr_normalized.';
 
+-- Une fonction du schéma public est exposée en RPC par la Data API. Celle-ci ne
+-- lit rien et n'écrit rien, mais elle coûte du processeur, et un appelant sans
+-- session n'a aucune raison de la payer à la base. Le rôle `authenticated` la
+-- garde : c'est lui qui insère dans `terms`, et l'expression de la colonne
+-- générée s'évalue avec ses droits — vérifié par isolation.sql, qui insère
+-- sous ce rôle.
+revoke all on function public.normalize_fr(text) from public, anon;
+grant execute on function public.normalize_fr(text) to authenticated, service_role;
+
 -- ---------------------------------------------------------------------------
 -- 2. La colonne générée
 -- ---------------------------------------------------------------------------
@@ -153,6 +162,11 @@ begin
     alter table public.terms
       add column fr_normalized text
         generated always as (public.normalize_fr(fr)) stored;
+
+    -- Inatteignable en pratique (`fr` est not null et la fonction est
+    -- strict), mais `unique` laisse passer plusieurs null : l'invariant est
+    -- écrit plutôt que déduit.
+    alter table public.terms alter column fr_normalized set not null;
 
     alter table public.terms
       add constraint terms_fr_normalized_key unique (fr_normalized);

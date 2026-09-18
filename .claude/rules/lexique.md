@@ -25,6 +25,14 @@ Si la règle de normalisation doit changer, elle change dans `terms.ts` **et**
 dans `public.normalize_fr` par une nouvelle migration, dans la même pull
 request, puis `npm run db:test:normalisation` doit passer sur la base locale.
 
+**Une colonne générée ne se recalcule pas quand sa fonction change** : la
+valeur est figée à l'insertion. Une migration qui modifie `normalize_fr` doit
+donc aussi réécrire les lignes existantes — `alter column fr_normalized drop
+expression` puis recréation de la colonne générée (ou `set expression as`),
+précédée du même contrôle de collisions que la migration du ticket 18. Sinon
+les lignes anciennes gardent une forme que plus personne ne cherche, et
+l'unicité laisse entrer un doublon.
+
 ## La base fait foi
 
 L'unicité est portée par la contrainte sur `terms.fr_normalized`, pas par une
