@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { type ReactNode, startTransition, useEffect, useOptimistic, useRef, useState } from "react";
 
 import { ajouterItem, basculerCoche, supprimerItem, viderCoches } from "./actions";
@@ -380,6 +381,19 @@ function LigneItem({
           </span>
         )}
       </button>
+
+      {/* Traduction manquante : le chemin direct vers la saisie du finnois
+          (ticket 16). Un lien à côté du bouton de coche et non dedans — un
+          lien dans un bouton n'est pas du HTML, et la ligne entière doit
+          rester le geste de coche. */}
+      {!ligne.terme && !enCours && (
+        <Link
+          href={{ pathname: "/lexicon", query: { fr: ligne.raw_fr } }}
+          className="flex min-h-12 shrink-0 items-center px-2 text-sm text-black/55 underline-offset-2 dark:text-white/55"
+        >
+          Traduire
+        </Link>
+      )}
 
       <button
         type="button"
