@@ -202,6 +202,54 @@ Ce qui déclenchera la reprise de cette décision : l'arrivée d'un deuxième
 utilisateur qui n'est pas de confiance. La même condition que la fermeture des
 inscriptions, notée dans `docs/REX-M1.md`.
 
+### D9. La forme normalisée est générée en base, et les accents sont retirés
+
+Deux choses tranchées ensemble au ticket 18, parce que la seconde n'a de sens
+qu'avec la première.
+
+**`terms.fr_normalized` est une colonne générée**, calculée par
+`public.normalize_fr(fr)`, jumelle SQL de `normalize()` dans `src/lib/terms.ts`.
+L'appelant ne la fournit plus ; s'il la fournit, Postgres refuse l'écriture
+avant toute politique. C'est ce qui ferme le trou que D8 laissait ouvert : plus
+personne ne peut réserver la forme d'un terme courant en y associant autre
+chose, parce que l'argument a disparu de la requête au lieu d'y être vérifié.
+
+Le prix est une règle écrite deux fois, en TypeScript et en SQL, qui doivent
+rester équivalentes étape par étape. Il est payé par `npm run
+db:test:normalisation`, qui passe les mêmes entrées — tous les cas de test et
+tout le lexique — aux deux implémentations et refuse la moindre différence. Les
+listes de caractères sont écrites en échappements `\uXXXX` des deux côtés,
+pour se comparer à l'œil.
+
+**Les accents sont retirés** de la forme normalisée : « crème fraîche » et
+« creme fraiche » donnent « creme fraiche ». Le lexique les écrit, parce qu'il
+est juste ; le téléphone ne les tape pas, parce qu'il est réglé en finnois et
+qu'un accent y demande un appui long. Depuis M0 chaque terme ajouté rendait la
+question plus chère, et une colonne générée la rend gratuite : les lignes
+existantes se recalculent toutes seules.
+
+Conséquence assumée : deux mots qui ne diffèrent que par l'accent partagent
+une entrée. Le seul cas trouvé dans le vocabulaire des courses est « pâtes » et
+« pâté », tous deux « pate ». Le lexique porte les pâtes ; un pâté s'écrira
+avec son complément — « pâté de campagne » — ou passera par le connecteur.
+
+Options écartées :
+
+*Une contrainte `check (fr_normalized = normalize_fr(fr))` plutôt qu'une
+colonne générée.* Elle vérifie ce que la colonne générée rend impossible, et
+laisse trois chemins d'écriture calculer chacun leur valeur pour se la faire
+contrôler. Retirer l'argument est plus simple que le vérifier.
+
+*L'extension `unaccent`.* Elle retire les accents de toutes les langues, selon
+un dictionnaire qu'on ne relit pas, et sa fonction n'est pas immuable — donc
+inutilisable dans une colonne générée sans l'envelopper. Une table explicite
+de quinze lettres françaises fait le travail, se relit, et a son exacte
+jumelle en TypeScript.
+
+*Conserver les accents.* C'était l'état depuis M0, et il avait un coût
+constant : chaque terme du lexique écrit correctement est un terme que la
+saisie au magasin ne trouve pas.
+
 ## Modèle de données
 
 * `profiles` : un enregistrement par compte

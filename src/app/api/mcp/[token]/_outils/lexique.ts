@@ -192,11 +192,14 @@ export function enregistrerOutilsLexique(server: McpServer, ctx: Contexte) {
       // appels simultanés sur le même terme la trouveraient. C'est la
       // contrainte d'unicité sur `fr_normalized` qui tranche, jamais nous.
       // Voir .claude/rules/lexique.md.
+      //
+      // `fr_normalized` n'est pas envoyée : la base la calcule elle-même,
+      // colonne générée par `normalize_fr()` (ticket 18). La forme calculée ici
+      // sert à relire la ligne en cas de conflit, et doit valoir la même chose.
       const { data: cree, error } = await ctx.supabase
         .from("terms")
         .insert({
           fr,
-          fr_normalized: forme,
           fi,
           aisle: rayon,
           created_by: ctx.userId,

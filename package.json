@@ -17,6 +17,7 @@
     "db:reset": "supabase db reset",
     "db:test": "docker exec -i supabase_db_kori psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q < supabase/tests/isolation.sql",
     "db:test:provisionnement": "docker exec -i supabase_db_kori psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q < supabase/tests/provisionnement.sql",
+    "db:test:normalisation": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verifier-normalisation.mts",
     "seed:terms": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file-if-exists=.env.local scripts/seed-terms.mts",
     "seed:terms:local": "eval $(supabase status -o env) && NEXT_PUBLIC_SUPABASE_URL=$API_URL SUPABASE_SECRET_KEY=$SECRET_KEY node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed-terms.mts"
   },
