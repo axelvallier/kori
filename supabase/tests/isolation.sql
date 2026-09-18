@@ -51,9 +51,10 @@ insert into public.mcp_tokens (user_id, token_hash, prefix) values
 -- Deux termes de test, un par compte. Leurs formes normalisées ne peuvent pas
 -- entrer en collision avec le lexique réel : ce test doit rester juste sur une
 -- base déjà peuplée par `npm run seed:terms`.
-insert into public.terms (fr, fr_normalized, fi, aisle, created_by) values
-  ('zzz test a', 'zzz test a', 'zzz testi a', 'produce', :'utilisateur_a'),
-  ('zzz test b', 'zzz test b', 'zzz testi b', 'produce', :'utilisateur_b');
+-- `fr_normalized` n'est pas écrite : colonne générée depuis le ticket 18.
+insert into public.terms (fr, fi, aisle, created_by) values
+  ('zzz test a', 'zzz testi a', 'produce', :'utilisateur_a'),
+  ('zzz test b', 'zzz testi b', 'produce', :'utilisateur_b');
 
 -- ---------------------------------------------------------------------------
 -- Critère 1 : le compte A n'obtient aucune ligne du compte B
@@ -150,8 +151,8 @@ end $$;
 
 do $$
 begin
-  insert into public.terms (fr, fr_normalized, fi, created_by)
-  values ('Zzz Test A', 'zzz test a', 'zzz testi a', auth.uid());
+  insert into public.terms (fr, fi, created_by)
+  values ('Zzz Test A', 'zzz testi a', auth.uid());
   raise exception 'un doublon sur fr_normalized a été accepté';
 exception
   when unique_violation then null;  -- attendu
@@ -174,11 +175,36 @@ end $$;
 -- Et l'insertion d'un terme au nom d'un autre compte doit être refusée.
 do $$
 begin
-  insert into public.terms (fr, fr_normalized, fi, created_by)
-  values ('zzz test c', 'zzz test c', 'zzz testi c', '11111111-1111-1111-1111-111111111111');
+  insert into public.terms (fr, fi, created_by)
+  values ('zzz test c', 'zzz testi c', '11111111-1111-1111-1111-111111111111');
   raise exception 'B a pu insérer un terme au nom de A';
 exception
   when insufficient_privilege then null;  -- attendu
+end $$;
+
+-- Ticket 18 : `fr_normalized` ne se dicte plus. Elle est générée depuis `fr`,
+-- et une insertion qui la fournit — mensongère ou non — est refusée par
+-- Postgres lui-même, avant toute politique. C'est ce qui ferme le squat d'une
+-- forme normalisée décrit dans D8.
+do $$
+begin
+  insert into public.terms (fr, fr_normalized, fi, created_by)
+  values ('zzz test d', 'lait', 'zzz testi d', auth.uid());
+  raise exception 'fr_normalized a pu être dictée à l''insertion';
+exception
+  when generated_always then null;  -- attendu, code 428C9
+end $$;
+
+-- Et la forme générée est bien celle de la règle partagée, pas la saisie.
+do $$
+declare forme text;
+begin
+  insert into public.terms (fr, fi, created_by)
+  values ('Zzz Tests D', 'zzz testi d', auth.uid())
+  returning fr_normalized into forme;
+  if forme <> 'zzz test d' then
+    raise exception 'forme générée inattendue : « % »', forme;
+  end if;
 end $$;
 
 -- ---------------------------------------------------------------------------

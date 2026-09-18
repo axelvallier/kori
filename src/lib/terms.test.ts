@@ -8,56 +8,19 @@
  * plus dans un projet qui n'en a besoin que pour une poignée de fonctions pures
  * serait une dépendance à maintenir pour rien.
  *
- * Les cas marqués « piège » sont ceux où le retrait naïf du pluriel, ou la
- * comparaison naïve de deux chaînes, donne un faux résultat. Ils doivent rester
- * verts : voir .claude/rules/lexique.md.
+ * Les cas de normalisation vivent dans `terms.cas.ts`, parce qu'ils servent
+ * aussi à comparer `normalize()` à son jumeau SQL — voir ce fichier et
+ * .claude/rules/lexique.md.
  */
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { CAS } from "./terms.cas.ts";
 import { normalize, resolveTerm, resolveTermes, type Terme } from "./terms.ts";
 
 describe("normalize", () => {
-  const cas: [string, string, string][] = [
-    // saisie, forme attendue, ce que le cas démontre
-    ["tomate", "tomate", "une saisie déjà canonique ne bouge pas"],
-    ["Tomate", "tomate", "la casse"],
-    ["TOMATES", "tomate", "la casse et le pluriel ensemble"],
-    ["  tomate  ", "tomate", "les espaces de bord"],
-    ["Des Tomates ", "tomate", "partitif, casse, pluriel et espace, tout à la fois"],
-    ["tomates", "tomate", "le pluriel simple"],
-    ["tomates    cerises", "tomate cerise", "les espaces multiples, et le pluriel sur chaque mot"],
-    ["les pommes", "pomme", "l'article défini pluriel"],
-    ["le pain", "pain", "l'article défini masculin"],
-    ["la farine", "farine", "l'article défini féminin"],
-    ["un citron", "citron", "l'article indéfini masculin"],
-    ["une pomme", "pomme", "l'article indéfini féminin"],
-    ["du beurre", "beurre", "le partitif masculin"],
-    ["de la crème", "crème", "le partitif féminin, forme longue d'abord"],
-    ["de l'huile", "huile", "le partitif devant voyelle"],
-    ["d'ail", "ail", "l'élision"],
-    ["d’ail", "ail", "l'apostrophe typographique du clavier de téléphone"],
-    ["l'oignon", "oignon", "l'article élidé"],
-    ["bœuf", "boeuf", "piège : la ligature du lexique"],
-    ["boeuf", "boeuf", "piège : et la forme tapée au clavier, qui doit lui répondre"],
-    ["œufs", "oeuf", "piège : ligature et pluriel, le mot le plus probable d'une liste"],
-    ["oeufs", "oeuf", "piège : sa forme tapée au clavier"],
-    ["ananas", "ananas", "piège : singulier en s, le pluriel naïf donnerait « anana »"],
-    ["des ananas", "ananas", "piège : le même, précédé d'un partitif"],
-    ["riz", "riz", "piège : mot court, aucun retrait ne doit s'appliquer"],
-    ["noix", "noix", "piège : singulier en x, le pluriel naïf donnerait « noi »"],
-    ["petits pois", "petit pois", "piège : invariable en second mot, pluriel sur le premier"],
-    ["jus", "jus", "piège : invariable"],
-    ["chips", "chips", "piège : invariable, et toujours écrit au pluriel"],
-    ["pain", "pain", "un mot en n, aucun retrait"],
-    ["lait", "lait", "un mot en t, aucun retrait"],
-    ["", "", "la chaîne vide ne lève pas"],
-    ["   ", "", "une saisie d'espaces se réduit à la chaîne vide"],
-    ["de la", "de la", "un partitif seul reste tel quel : il n'est un préfixe que s'il y a un mot derrière"],
-    ["crème fraîche", "crème fraîche", "les accents sont conservés — voir la note plus bas"],
-    ["viande hachée de bœuf", "viande hachée de boeuf", "une expression entière"],
-  ];
+  const cas = CAS;
 
   for (const [saisie, attendu, pourquoi] of cas) {
     it(`« ${saisie} » → « ${attendu} » (${pourquoi})`, () => {

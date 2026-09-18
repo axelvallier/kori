@@ -81,7 +81,7 @@ describe("parseEntry", () => {
 
   it("laisse un produit trouvable par le lexique dans les formes du ticket", () => {
     assert.equal(normalize(parseEntry("500g de farine").produit), "farine");
-    assert.equal(normalize(parseEntry("1 paquet de pâtes").produit), "pâte");
+    assert.equal(normalize(parseEntry("1 paquet de pâtes").produit), "pate");
     assert.equal(normalize(parseEntry("6 oeufs").produit), "oeuf");
   });
 });

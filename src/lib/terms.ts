@@ -34,6 +34,9 @@ const PREFIXES = [
  * Mots qui finissent par s ou x au singulier, ou qui sont invariables. Sans
  * cette liste, « ananas » devient « anana », « noix » devient « noi », et
  * « petits pois » devient « petit poi » — trois termes introuvables.
+ *
+ * Écrits **sans accent**, parce que la comparaison se fait après leur retrait :
+ * « maïs » arrive ici sous la forme « mais ».
  */
 const INVARIABLES = new Set([
   "ananas",
@@ -42,7 +45,7 @@ const INVARIABLES = new Set([
   "chips",
   "couscous",
   "jus",
-  "maïs",
+  "mais",
   "noix",
   "os",
   "pois",
@@ -50,26 +53,50 @@ const INVARIABLES = new Set([
   "tapas",
 ]);
 
+/**
+ * Les lettres accentuées du français, et ce qu'elles deviennent. Une table
+ * explicite plutôt qu'une décomposition Unicode (`normalize("NFD")`) : la
+ * fonction SQL `normalize_fr` fait la même chose avec `translate()`, et deux
+ * tables identiques se comparent à l'œil, alors qu'une décomposition Unicode
+ * et un dictionnaire `unaccent` ne se comparent pas.
+ */
+const ACCENTUEES = "àâäéèêëîïôöùûüç";
+const SANS_ACCENT = "aaaeeeeiioouuuc";
+
+/**
+ * Ce qui compte comme espace. La classe est écrite en toutes lettres plutôt
+ * que `\s`, parce que `\s` n'a pas le même contenu en JavaScript et dans les
+ * expressions régulières de Postgres — l'espace insécable, par exemple, est
+ * dans l'un et pas dans l'autre. `normalize_fr` porte la même liste.
+ */
+const ESPACES = /[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+/g;
+
 /** Retire un pluriel simple sur un mot, sauf s'il est invariable. */
 function singulier(mot: string): string {
   if (INVARIABLES.has(mot)) return mot;
-  if (mot.length <= 3) return mot;
+  // En points de code, comme `char_length()` côté SQL — pas en unités UTF-16.
+  if ([...mot].length <= 3) return mot;
   return mot.replace(/[sx]$/, "");
 }
 
 /**
  * Forme canonique d'un terme français, utilisée comme clé d'unicité du lexique.
  *
+ * **Cette fonction a un jumeau SQL**, `public.normalize_fr`, qui calcule la
+ * colonne générée `terms.fr_normalized`. Les deux doivent rester
+ * équivalentes, étape par étape et dans le même ordre : toute divergence est
+ * un bug, même si les tests TypeScript passent. `npm run db:test:normalisation`
+ * les compare sur tous les cas de `terms.cas.ts` et sur tout le lexique.
+ *
  * Le pluriel est retiré sur **chaque** mot, pas seulement le dernier : en
  * français il se marque partout, et « tomates cerises » doit rejoindre
  * « tomate cerise ».
  *
- * Les accents, eux, sont **conservés** : « crème fraîche » et « creme fraiche »
- * restent deux formes distinctes, et la seconde ne trouve rien. C'est une
- * question ouverte, pas un choix — elle appartient au ticket 18, qui doit la
- * trancher en même temps que la règle SQL équivalente. Le coût est le même que
- * celui payé ici pour les ligatures : une migration qui réécrit
- * `fr_normalized` sur les lignes concernées, `terms` n'ayant pas d'update.
+ * Les accents sont **retirés** (décision D9) : « crème fraîche » et « creme
+ * fraiche » donnent la même forme. Le lexique les écrit, personne ne les tape
+ * sur un clavier de téléphone réglé en finnois. Conséquence assumée : deux
+ * mots qui ne diffèrent que par l'accent partagent une entrée — « pâtes » et
+ * « pâté » donnent tous deux « pate ».
  */
 export function normalize(fr: string): string {
   let s = fr
@@ -77,15 +104,16 @@ export function normalize(fr: string): string {
     // Les claviers de téléphone produisent l'apostrophe typographique par
     // défaut en français. Sans cette ligne, « d’ail » et « d'ail » seraient
     // deux termes distincts, et celui saisi au magasin ne trouverait rien.
-    .replace(/[\u2019\u02BC]/g, "'")
+    .replace(/[\u2019\u02bc]/g, "'")
     // Les ligatures, pour la même raison, en plus courant encore : le lexique
     // écrit « bœuf » et « œuf », personne ne les tape comme ça sur un clavier
     // de téléphone. Sans cette ligne, « boeuf » et « oeufs » — deux des mots
     // les plus probables d'une liste de courses — ne trouvent rien.
     .replace(/œ/g, "oe")
     .replace(/æ/g, "ae")
-    .trim()
-    .replace(/\s+/g, " ");
+    .replace(/[àâäéèêëîïôöùûüç]/g, (c) => SANS_ACCENT[ACCENTUEES.indexOf(c)])
+    .replace(ESPACES, " ")
+    .trim();
 
   for (const prefixe of PREFIXES) {
     if (s.startsWith(prefixe)) {

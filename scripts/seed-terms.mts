@@ -94,7 +94,10 @@ const supabase = createClient(url, cle, { auth: { persistSession: false } });
 
 const { data, error } = await supabase
   .from("terms")
-  .upsert(termes.map(({ fr, fi, aisle, fr_normalized }) => ({ fr, fi, aisle, fr_normalized })), {
+  // `fr_normalized` n'est pas envoyée : c'est une colonne générée depuis le
+  // ticket 18, la base la calcule et refuserait qu'on la lui dicte. La forme
+  // calculée ici ne sert qu'au contrôle des collisions au-dessus.
+  .upsert(termes.map(({ fr, fi, aisle }) => ({ fr, fi, aisle })), {
     onConflict: "fr_normalized",
     ignoreDuplicates: true,
   })
