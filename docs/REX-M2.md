@@ -163,6 +163,54 @@ d'identifiants suffisent à dépasser la longueur d'URL admise et à faire écho
 l'écriture en bloc. Par lots de cent maintenant — la borne était déjà connue
 ailleurs dans le projet, elle avait juste été oubliée ici.
 
+### Tester le workflow de migrations sur une branche pas à jour
+
+Le saut de `supabase/setup-cli` de v1.7.1 à v3.0.0 méritait d'être vérifié et
+pas supposé : ce workflow détient le mot de passe de la base. D'où l'idée, juste
+en soi, de lancer le workflow sur la branche de Dependabot par
+`workflow_dispatch` — aucune migration en attente, donc une exécution qui ne
+teste que l'action.
+
+Sauf que cette branche avait été créée **avant** les fusions du lot M2 : quatre
+migrations au lieu de cinq. Or ce workflow ne fait pas qu'installer une CLI, il
+**compare** les migrations locales au distant. La base ayant une version que la
+branche ne connaissait pas, `db push` a refusé :
+
+```
+Remote migration versions not found in local migrations directory.
+```
+
+**Rien n'a été touché** — l'échec est tombé sur l'étape `--dry-run`, qui est
+séparée précisément pour ça, et l'étape d'application a été sautée. C'est la
+première fois que cette séparation sert.
+
+Deux choses à retenir, dans l'ordre où elles coûtent :
+
+**La CLI suggère une commande qu'il ne faut surtout pas lancer ici.** Le message
+propose `supabase migration repair --status reverted 20260914180000`. Le conseil
+est juste dans le cas général — un historique qui contient une version qu'on a
+retirée du dépôt. Ici il est faux : cette migration **est** appliquée, et la
+marquer annulée ferait mentir l'historique tout en laissant les contraintes en
+place, jusqu'à ce qu'une fusion tente de la rejouer. Une suggestion d'outil est
+un diagnostic, pas une instruction.
+
+**Une branche sur laquelle on lance ce workflow doit d'abord être rebasée sur
+`main`.** Sinon on ne teste pas ce qu'on croit : on teste un désalignement qu'on
+a fabriqué soi-même. Rebasée, la même exécution passe — `Remote database is up
+to date` au `--dry-run` comme à l'application, et cinq migrations alignées des
+deux côtés.
+
+C'est le décalage de `REX-M1.md` pris dans l'autre sens : là-bas le code était en
+avance sur la base, ici la base était en avance sur la branche. Deux histoires
+qui avancent séparément, et c'est toujours l'écart qui mord.
+
+**Au passage, une prise sur la pull request elle-même** : Dependabot avait
+remplacé le SHA de v1.7.1 par celui de v3.0.0 en laissant le commentaire
+`# v1`. Dans un dépôt qui épingle ses actions par SHA, ce commentaire est la
+seule chose qu'un humain peut lire — il aurait annoncé une version que
+l'épingle ne pointe pas. Vérifier à quel tag correspond réellement un SHA
+proposé fait partie de la relecture.
+
 ### Next 16 refuse un second `next dev` dans le même répertoire
 
 Détail d'outillage, quinze minutes perdues. Un serveur de développement tournait
