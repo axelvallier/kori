@@ -23,6 +23,12 @@ export default async function Page({ searchParams }: PageProps<"/">) {
             une fois, à l'installation du connecteur, jamais en magasin. */}
         <nav className="flex shrink-0 items-center">
           <Link
+            href="/lexicon"
+            className="flex min-h-12 items-center justify-center px-2 text-sm text-black/55 dark:text-white/55"
+          >
+            Lexique
+          </Link>
+          <Link
             href="/settings"
             className="flex min-h-12 min-w-12 items-center justify-center px-2 text-sm text-black/55 dark:text-white/55"
           >
